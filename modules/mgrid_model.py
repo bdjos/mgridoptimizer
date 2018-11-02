@@ -22,22 +22,19 @@ class battery:
         self.energy_max = energy_capacity * 1000
         self.energy_rem = 0
         self.base_cost = base_cost
-        self.energy_cost = energy_cost
+        self.energy_cost = energy_cost 
     
-    @classmethod
-    def solar_support(cls, power, energy_capacity, soc_min, soc_max, efficiency, base_cost, energy_cost):
-        return 
-    
+    def charge(self, amt):
+        discharged = -1*min((self.energy_max-self.energy_rem), self.power, abs(amt))
+        self.energy_rem -= discharged 
+        
     def discharge(self, amt):
-        if amt > 0:
-            # If facility demand is positive, discharge battery (discharge=positive)
-            discharged = min(self.energy_rem, self.power, amt)
-            self.energy_rem -= discharged
+        discharged = min(self.energy_rem, self.power, amt)
+        self.energy_rem -= discharged
         elif amt < 0:
             # if facility demand is negative (solar production greater than demand), charge battery
             # (discharge=negative)
-            discharged = -1*min((self.energy_max-self.energy_rem), self.power, abs(amt))
-            self.energy_rem -= discharged 
+
         else:
             discharged = 0
         return discharged
@@ -46,7 +43,22 @@ class battery:
         return self.base_cost + self.energy_capacity*self.energy_cost
 
 class solar_support(battery):
+    def __init__(self, power, energy_capacity, soc_min, soc_max, efficiency, base_cost, energy_cost):
+        super().__init__(self, power, energy_capacity, soc_min, soc_max, efficiency, base_cost, energy_cost)
     
+    def conditions(self, amt):
+        if amt > 0: # If facility demand is positive, discharge battery (discharge=positive)
+            self.discharge(amt)
+        elif amt < 0:             # if facility demand is negative (solar production greater than demand), charge battery
+                                  # (discharge=negative)
+        
+class arbitrage(battery):
+    def __init__(self, power, energy_capacity, soc_min, soc_max, efficiency, base_cost, energy_cost):
+        super().__init__(self, power, energy_capacity, soc_min, soc_max, efficiency, base_cost, energy_cost)
+    
+class arbitrage(battery):
+    def __init__(self, power, energy_capacity, soc_min, soc_max, efficiency, base_cost, energy_cost):
+        super().__init__(self, power, energy_capacity, soc_min, soc_max, efficiency, base_cost, energy_cost)
 
 class converter:
     def __init__(self, power, base_cost, power_cost):
