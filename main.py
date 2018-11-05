@@ -90,8 +90,6 @@ for t in range(500):
     demand_optimizer.step()
     cost_optimizer.step()
   
-
-
 # Generate x(solar size) and y(storage size) values for plotting. Save deregularized values
 x=np.linspace(min_pv_size,max(max_pv_size, max_storage_size),50)
 y=np.linspace(min_storage_size,max(max_pv_size,max_storage_size),50)
