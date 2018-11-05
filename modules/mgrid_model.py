@@ -15,56 +15,78 @@ import matplotlib.pyplot as plt
 import copy
 from modules.demanddata import import_data
 
-class battery:
-    def __init__(self, power, energy_capacity, soc_min, soc_max, efficiency, base_cost, energy_cost, mode):
-        self.power = power * 1000
+class battery():
+    def __init__(self, energy_capacity, soc_min, soc_max, efficiency, base_cost, energy_cost, mode):
         self.energy_capacity = energy_capacity * 1000
         self.energy_max = energy_capacity * 1000
         self.energy_rem = 0
         self.base_cost = base_cost
         self.energy_cost = energy_cost 
-    
-    def charge(self, amt):
-        discharged = -1*min((self.energy_max-self.energy_rem), self.power, abs(amt))
-        self.energy_rem -= discharged 
-        
-    def discharge(self, amt):
-        discharged = min(self.energy_rem, self.power, amt)
-        self.energy_rem -= discharged
-        elif amt < 0:
-            # if facility demand is negative (solar production greater than demand), charge battery
-            # (discharge=negative)
+        self.mode = mode
 
+    def check_capacity(self, amt):
+        if amt > 0: # Charge if amt > 0
+            if amt < self.energy_capacity - self.energy_rem:
+                return amt
+            else:
+                return self.energy_capacity - self.energy_rem
+        elif amt < 0: # Discharge if amt < 0
+            if abs(amt) < self.energy_rem - 0:
+                return amt
+            else:
+                return self.energy_rem - 0
         else:
-            discharged = 0
-        return discharged
+            return 0
+        
+    def charge(self, amt):
+        self.energy_rem += amt
     
     def cost_calc(self):
         return self.base_cost + self.energy_capacity*self.energy_cost
 
 class solar_support(battery):
+    "Solar support charges or discharges when possible."
     def __init__(self, power, energy_capacity, soc_min, soc_max, efficiency, base_cost, energy_cost):
         super().__init__(self, power, energy_capacity, soc_min, soc_max, efficiency, base_cost, energy_cost)
     
     def conditions(self, amt):
-        if amt > 0: # If facility demand is positive, discharge battery (discharge=positive)
-            self.discharge(amt)
-        elif amt < 0:             # if facility demand is negative (solar production greater than demand), charge battery
-                                  # (discharge=negative)
+        return amt
         
 class arbitrage(battery):
+    "Set arbitrage hours and price to buy low/sell high"
     def __init__(self, power, energy_capacity, soc_min, soc_max, efficiency, base_cost, energy_cost):
         super().__init__(self, power, energy_capacity, soc_min, soc_max, efficiency, base_cost, energy_cost)
     
-class arbitrage(battery):
+    def conditions(self, amt, hour):
+        if amt > 0: # If facility demand is positive, discharge battery (discharge=positive)
+            self.discharge(amt)
+        elif amt < 0:             # if facility demand is negative (solar production greater than demand), charge battery
+            self.charge(amt)                      # (discharge=negative)
+    
+class peak_shaving(battery):
+    "Set peak demand target to reduce total peak demand"
     def __init__(self, power, energy_capacity, soc_min, soc_max, efficiency, base_cost, energy_cost):
         super().__init__(self, power, energy_capacity, soc_min, soc_max, efficiency, base_cost, energy_cost)
 
-class converter:
+    def conditions(self, amt):
+        if amt > 0: # If facility demand is positive, discharge battery (discharge=positive)
+            self.discharge(amt)
+        elif amt < 0:             # if facility demand is negative (solar production greater than demand), charge battery
+            self.charge(amt)      
+
+class converter():
     def __init__(self, power, base_cost, power_cost):
         self.power = power
         self.base_cost = base_cost
         self.power_cost = power_cost
+        self.draw_rem = power
+    
+    def check_available(self, draw_req):
+        "Check if converter has availability"
+        if draw_req < self.draw_rem:
+            return draw_req
+        else:
+            return self.draw_rem
     
     def cost_calc(self):
         return self.base_cost + self.power*self.power_cost   
@@ -214,9 +236,6 @@ if __name__ == '__main__':
     
     training_df = regression_training(file, 300, 1500, 100, 1000, 8)
                 
-                
-        
-    
 def regressionvals(demand_file, min_pv_size, max_pv_size, num_steps=3):
     
     # Merge DFs and generate consumption - production data sets to determine yearly
