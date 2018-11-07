@@ -16,20 +16,62 @@ import copy
 from modules.demanddata import import_data
 
 class battery():
-    def __init__(self, energy_capacity, soc_min, soc_max, efficiency, base_cost, energy_cost, mode):
+    def __init__(self, energy_capacity, soc_min, soc_max, efficiency, base_cost, energy_cost):
+        self.type = 'battery'
         self.energy_capacity = energy_capacity * 1000
         self.energy_max = energy_capacity * 1000
-        self.energy_rem = 0
+        self.energy_rem = energy_capacity * 1000
         self.base_cost = base_cost
         self.energy_cost = energy_cost 
-        self.mode = mode
+        
+    def charge(self, amt):
+        self.energy_rem += amt
+    
+    def cost_calc(self):
+        return self.base_cost + self.energy_capacity*self.energy_cost      
 
-    def check_capacity(self, amt):
+class converter():
+    def __init__(self, power, base_cost, power_cost):
+        self.type = 'converter'
+        self.power = power
+        self.base_cost = base_cost
+        self.power_cost = power_cost
+        self.capacity_rem = power
+    
+    def capacity_calc(self, amt):
+        self.capacity_rem = self.capacity_rem - abs(amt)
+    
+    def reset_capacity(self):
+        self.capacity_rem = self.power
+        
+    def cost_calc(self):
+        return self.base_cost + self.power*self.power_cost   
+
+class controller():
+    def __init__(self):
+        self.type = 'controller'
+        self.converter = None
+        self.battery_list = {}
+        
+    def config_converter(self, converter):
+        self.converter = converter
+        
+    def config_storage(self, battery, name, mode):
+#        if battery.idx in battery_list:
+#            storage[battery.idx]
+        if mode == 'solar_support':
+            configs = None
+        if mode == 'arbitrage':
+            configs = {'buy_range': buy_range, 'sell_range': sell_range}
+        
+        self.battery_list[name] = {'object': battery, 'mode': mode, 'configs': configs}
+    
+    def check_solar_support(self, battery, amt):
         if amt > 0: # Charge if amt > 0
-            if amt < self.energy_capacity - self.energy_rem:
+            if amt < battery.energy_capacity - battery.energy_rem:
                 return amt
             else:
-                return self.energy_capacity - self.energy_rem
+                return battery.energy_capacity - battery.energy_rem
         elif amt < 0: # Discharge if amt < 0
             if abs(amt) < self.energy_rem - 0:
                 return amt
@@ -37,62 +79,34 @@ class battery():
                 return self.energy_rem - 0
         else:
             return 0
-        
-    def charge(self, amt):
-        self.energy_rem += amt
     
-    def cost_calc(self):
-        return self.base_cost + self.energy_capacity*self.energy_cost
-
-class solar_support(battery):
-    "Solar support charges or discharges when possible."
-    def __init__(self, power, energy_capacity, soc_min, soc_max, efficiency, base_cost, energy_cost):
-        super().__init__(self, power, energy_capacity, soc_min, soc_max, efficiency, base_cost, energy_cost)
-    
-    def conditions(self, amt):
-        return amt
-        
-class arbitrage(battery):
-    "Set arbitrage hours and price to buy low/sell high"
-    def __init__(self, power, energy_capacity, soc_min, soc_max, efficiency, base_cost, energy_cost):
-        super().__init__(self, power, energy_capacity, soc_min, soc_max, efficiency, base_cost, energy_cost)
-    
-    def conditions(self, amt, hour):
-        if amt > 0: # If facility demand is positive, discharge battery (discharge=positive)
-            self.discharge(amt)
-        elif amt < 0:             # if facility demand is negative (solar production greater than demand), charge battery
-            self.charge(amt)                      # (discharge=negative)
-    
-class peak_shaving(battery):
-    "Set peak demand target to reduce total peak demand"
-    def __init__(self, power, energy_capacity, soc_min, soc_max, efficiency, base_cost, energy_cost):
-        super().__init__(self, power, energy_capacity, soc_min, soc_max, efficiency, base_cost, energy_cost)
-
-    def conditions(self, amt):
-        if amt > 0: # If facility demand is positive, discharge battery (discharge=positive)
-            self.discharge(amt)
-        elif amt < 0:             # if facility demand is negative (solar production greater than demand), charge battery
-            self.charge(amt)      
-
-class converter():
-    def __init__(self, power, base_cost, power_cost):
-        self.power = power
-        self.base_cost = base_cost
-        self.power_cost = power_cost
-        self.draw_rem = power
-    
-    def check_available(self, draw_req):
-        "Check if converter has availability"
-        if draw_req < self.draw_rem:
-            return draw_req
+    def check_converter(self, amt):
+        if abs(amt) < self.converter.capacity_rem:
+            return amt
         else:
-            return self.draw_rem
-    
-    def cost_calc(self):
-        return self.base_cost + self.power*self.power_cost   
+            return abs(amt)/amt * self.converter.capacity_rem
+                    
+    def io(self, amt):
+        for battery in self.battery_list:
+            if self.battery_list[battery]['mode'] == 'solar_support':
+                charge = self.check_solar_support(self.battery_list[battery]['object'], amt)
+            elif battery['mode'] == 'arbitrage':
+                charge = self.check_arbitrage(battery['object'], amt)
+            elif battery['mode'] == 'peak_shaving':
+                charge = self.check_peak_shaving(battery['object'], amt)
+            charge = self.check_converter
+            self.converter.capacity_calc(charge)
+            self.battery_list[battery]['object'].charge(charge)
+            amt = amt - charge     
+
+    def __str__(self):
+        return (f"""
+                {self.__dict__}
+                """)
     
 class solar:
     def __init__(self, solar_df, system_capacity, base_cost, perw_cost):
+        self.type = 'solar'
         self.solar_df = solar_df
         self.system_capacity = system_capacity
         self.base_cost = base_cost
@@ -117,9 +131,8 @@ class solar:
 class system_model:  
     def __init__(self, demand_df):
         self.demand_obj = demand_df
-        self.storage_obj = storage(0, 0, 0, 0, 0)
-        self.solar_obj = None
-    
+        self.system_components = {}
+        
     @classmethod
     def import_fminute(cls, file):
         '''
@@ -129,47 +142,26 @@ class system_model:
         demand_df = import_data.fifteenMinute(file)
         return cls(demand_df)
     
-    def add_solar(self, system_capacity, base_cost, perkw_cost, overwrite=False):
-        if self.solar_obj and overwrite==False:
-            print('''Solar already added to system. To modify, use add_solar method
-                  with overwrite==True''')
-            return None
+    def add_component(self, component, name):
+        if name in self.system_components:
+            print(f'{name} already in system components. Either rename or remove existing component')
         else:
-            self.solar_obj = solar.run_api(system_capacity, base_cost, perkw_cost)
-            print(f'{system_capacity} kW solar added to system')
-            
-    def remove_solar(self):
-        if not self.solar_obj:
-            print('No solar added to system')
-            return None
-        else:
-            self.solar_obj = None
-    
-    def add_storage(self, power, energy_capacity, storage_base_cost, storage_power_cost, 
-                    storage_energy_cost, overwrite=False):
-        if self.storage_obj and overwrite==False:
-            self.storage_obj = storage(power, energy_capacity, storage_base_cost, storage_power_cost, 
-                    storage_energy_cost)
-#            print('''Storage already added to system. To modify, use remove_storage method 
-#                  and add new storage''')
-        else:
-            self.storage_obj = storage(power, energy_capacity, storage_base_cost, storage_power_cost, 
-                    storage_energy_cost)
-            print(f'{power} W, {energy_capacity} Wh storage added to system')
+            self.system_components[name] = component
+                        
+    def remove_component(self, name):
+        try:
+            name in self.system_components
+        except:
+            print(f'{name} is not in system')
         
-    def remove_storage(self):
-        if not self.storage_obj:
-            print('No storage added to system')
-            return None
-        else:
-            self.storage_obj = None
+        del self.system_components[name]
         
     def simulate(self):
-        delta = pd.DataFrame(data=self.demand_obj.df['Demand'] - self.solar_obj.solar_df['Production'], columns=['Demand'])
+        delta = pd.DataFrame(data=self.demand_obj.df['Demand'] - self.system_components['sol1'].solar_df['Production'], columns=['Demand'])
         
         storage_vals = []
         for demand_vals in delta['Demand']:
-            storage_vals.append(self.storage_obj.discharge(demand_vals))
+            storage_vals.append(self.system_components['cont1'].io(demand_vals))
         
         self.simulated_df = pd.DataFrame(data=storage_vals, columns=['Demand'])
         self.simulated_df.index.names = ['Hour']
@@ -177,23 +169,18 @@ class system_model:
         
         self.simulated_df['Demand'] = self.simulated_df['Demand'].apply(lambda x: 0 if x < 0 else x)
         
-        self.system_cost = self.storage_obj.cost_calc() + self.solar_obj.cost_calc()
-        
         return sum(self.simulated_df['Demand'])
-            
-        
+                
     def plot_demands(capacity_map, demands):
         plt.plot(capacity_map, demands)
         plt.show()
         
     def __str__(self):
         
-        return(f'''
-        Solar system size: {self.solar_obj.system_capacity} kW
-        Storage power: {self.storage_obj.power} W
-        Storage capacity: {self.storage_obj.energy_max} Wh
-        Total system cost: ${self.system_cost}
-        ''')
+        components = ''
+        for component in self.system_components:
+            components = component + components
+        return components
 
 def regtrain_data(demand_file, solar_min, solar_max, solar_base_cost, solar_perw_cost, storage_min, 
                   storage_max, storage_base_cost, storage_power_cost, storage_energy_cost,
@@ -232,9 +219,7 @@ if __name__ == '__main__':
         system.add_solar(solar_power)
         system.add_storage(storage_power, storage_capacity)
         system.view_system()
-        total = system.simulate()
-    
-    training_df = regression_training(file, 300, 1500, 100, 1000, 8)
+        total = system.simulate()    
                 
 def regressionvals(demand_file, min_pv_size, max_pv_size, num_steps=3):
     
