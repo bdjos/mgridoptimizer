@@ -9,12 +9,12 @@ from modules.mgrid_model import *
 import os
 
 # Solar Specs
-solar_power = 100
+solar_power = 1000
 solar_base_cost = 10000
 solar_power_cost = 1.5*1000
 
 # Storage Specs
-battery_capacity = 100
+battery_capacity = 500
 battery_soc_min = 10
 battery_soc_max = 90
 battery_efficiency = 0.95
@@ -22,7 +22,7 @@ battery_base_cost = 10000
 battery_energy_cost = 1*500
 
 # Converter Specs
-converter_power = 100
+converter_power = 1000
 converter_base_cost =  1000
 converter_power_cost = 100
 

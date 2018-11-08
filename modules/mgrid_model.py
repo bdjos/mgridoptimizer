@@ -96,14 +96,13 @@ class controller():
             elif self.battery_list[battery]['mode'] == 'peak_shaving':
                 charge = self.check_peak_shaving(battery['object'], amt)
             charge = self.check_converter(charge)
-            self.converter.capacity_calc(charge)
-            self.battery_list[battery]['object'].charge(charge)
+            self.converter.capacity_calc(charge) # Update Converter capacity available
+            self.battery_list[battery]['object'].charge(charge) # Updte battery capacity
             amt = amt - charge    
-        print(amt)
         return amt
 
     def __str__(self):
-        return self.__dict__
+        return f"{self.__dict__}"
     
 class solar:
     def __init__(self, solar_df, system_capacity, base_cost, perw_cost):
@@ -150,25 +149,22 @@ class system_model:
             self.system_components[name] = component
                         
     def remove_component(self, name):
-        try:
-            name in self.system_components
-        except:
+        if name in self.system_components:
+            del self.system_components[name]
+        else:
             print(f'{name} is not in system')
         
-        del self.system_components[name]
-        
     def simulate(self):
+        # Run passive production
         delta = pd.DataFrame(data=self.demand_obj.df['Demand'] - self.system_components['sol1'].solar_df['Production'], columns=['Demand'])
         
+        #Run controller
         storage_vals = []
         for demand_vals in delta['Demand']:
-            storage_vals.append(self.system_components['cont1'].io(demand_vals))
+            storage_vals.append(-self.system_components['cont1'].io(-demand_vals)) # Neg  values for demand
         
         self.simulated_df = pd.DataFrame(data=storage_vals, columns=['Demand'])
         self.simulated_df.index.names = ['Hour']
-        self.simulated_df['Demand'] = delta['Demand'] - self.simulated_df['Demand']
-        
-        self.simulated_df['Demand'] = self.simulated_df['Demand'].apply(lambda x: 0 if x < 0 else x)
         
         return sum(self.simulated_df['Demand'])
                 
@@ -184,29 +180,33 @@ class system_model:
         return components
 
 def regtrain_data(demand_file, solar_min, solar_max, solar_base_cost, solar_perw_cost, storage_min, 
-                  storage_max, storage_base_cost, storage_power_cost, storage_energy_cost,
-                  numsteps_solar, numsteps_storage, energy_cost, lifecycle):
+                  storage_max, storage_base_cost, storage_energy_cost, converter_max, converter_base_cost, 
+                  converter_power_cost, numsteps_solar, numsteps_storage, energy_cost, lifecycle):
     """
     Run system model on solar_min to solar_max & storage_min to storage_max. Simulate
     data on demand_file. Return results in pd df.
     """
     system_arch = system_model.import_fminute(demand_file) # Initialize system model archetype
-    reg_vals = {'solar_capacity': [], 'storage_capacity': [], 'system_cost': [], 'demand': [], 'lifecycle_cost': []}
+    reg_vals = {'solar_capacity': [], 'storage_capacity': [], 'converter_capacity': [], 
+                'system_cost': [], 'demand': [], 'lifecycle_cost': []}
     
     #Loop through all solar and storage capacities to create training data
     for solar_capacities in np.linspace(solar_min, solar_max, numsteps_solar):
         model_temp = copy.copy(system_arch)
-        model_temp.add_solar(solar_capacities, solar_base_cost, solar_perw_cost)
+        model_temp.add_component(solar_capacities, solar_base_cost, solar_perw_cost)
         for storage_capacities in np.linspace(storage_min, storage_max, numsteps_storage):
-            model_temp.add_storage(storage_capacities, storage_capacities, storage_base_cost, 
+            model_temp.add_component(storage_capacities, storage_capacities, storage_base_cost, 
                   storage_power_cost, storage_energy_cost)
-            demand = model_temp.simulate()
+            for converter_capacities in np.linspace(converter_min, converter_max, numsteps_converter):
+                model_temp.add_component()
+                demand = model_temp.simulate()
             
-            reg_vals['solar_capacity'].append(solar_capacities)
-            reg_vals['storage_capacity'].append(storage_capacities)
-            reg_vals['system_cost'].append(model_temp.system_cost)
-            reg_vals['demand'].append(demand)
-            reg_vals['lifecycle_cost'].append(model_temp.system_cost + energy_cost*demand*lifecycle)
+                reg_vals['solar_capacity'].append(solar_capacities)
+                reg_vals['storage_capacity'].append(storage_capacities)
+                reg_vals['converter_capacity'].append(converter_capacities)
+                reg_vals['system_cost'].append(model_temp.system_cost)
+                reg_vals['demand'].append(demand)
+                reg_vals['lifecycle_cost'].append(model_temp.system_cost + energy_cost*demand*lifecycle)
             
     training_df = pd.DataFrame(reg_vals)
     training_df.index.names = ['hours']
