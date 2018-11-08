@@ -33,10 +33,10 @@ class battery():
 class converter():
     def __init__(self, power, base_cost, power_cost):
         self.type = 'converter'
-        self.power = power
+        self.power = power*1000
         self.base_cost = base_cost
         self.power_cost = power_cost
-        self.capacity_rem = power
+        self.capacity_rem = self.power
     
     def capacity_calc(self, amt):
         self.capacity_rem = self.capacity_rem - abs(amt)
@@ -73,10 +73,10 @@ class controller():
             else:
                 return battery.energy_capacity - battery.energy_rem
         elif amt < 0: # Discharge if amt < 0
-            if abs(amt) < self.energy_rem - 0:
+            if abs(amt) < battery.energy_rem - 0:
                 return amt
             else:
-                return self.energy_rem - 0
+                return battery.energy_rem - 0
         else:
             return 0
     
@@ -87,22 +87,23 @@ class controller():
             return abs(amt)/amt * self.converter.capacity_rem
                     
     def io(self, amt):
+        self.converter.reset_capacity()
         for battery in self.battery_list:
             if self.battery_list[battery]['mode'] == 'solar_support':
                 charge = self.check_solar_support(self.battery_list[battery]['object'], amt)
-            elif battery['mode'] == 'arbitrage':
+            elif self.battery_list[battery]['mode'] == 'arbitrage':
                 charge = self.check_arbitrage(battery['object'], amt)
-            elif battery['mode'] == 'peak_shaving':
+            elif self.battery_list[battery]['mode'] == 'peak_shaving':
                 charge = self.check_peak_shaving(battery['object'], amt)
-            charge = self.check_converter
+            charge = self.check_converter(charge)
             self.converter.capacity_calc(charge)
             self.battery_list[battery]['object'].charge(charge)
-            amt = amt - charge     
+            amt = amt - charge    
+        print(amt)
+        return amt
 
     def __str__(self):
-        return (f"""
-                {self.__dict__}
-                """)
+        return self.__dict__
     
 class solar:
     def __init__(self, solar_df, system_capacity, base_cost, perw_cost):
@@ -212,15 +213,7 @@ def regtrain_data(demand_file, solar_min, solar_max, solar_base_cost, solar_perw
     return training_df   
      
 if __name__ == '__main__':
-    
-    file = os.path.join('data', 'dc_foods_2014.csv')
-    def single_system_test(file, solar_power, storage_power, storage_capacity):
-        system = system_model.import_fminute(file)
-        system.add_solar(solar_power)
-        system.add_storage(storage_power, storage_capacity)
-        system.view_system()
-        total = system.simulate()    
-                
+    print('okay!')
 def regressionvals(demand_file, min_pv_size, max_pv_size, num_steps=3):
     
     # Merge DFs and generate consumption - production data sets to determine yearly

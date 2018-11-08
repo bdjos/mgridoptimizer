@@ -46,6 +46,6 @@ system.add_component(sol1, 'sol1')
 system.add_component(bat1, 'bat1')
 system.add_component(cont1, 'cont1')
 
-system.simulate()
+print(system.simulate())
 
 
