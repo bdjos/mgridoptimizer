@@ -131,7 +131,7 @@ class solar:
 class system_model:  
     def __init__(self, demand_df):
         self.demand_obj = demand_df
-        self.system_components = {}
+        self.system_components = {} # Holds all system components
         
     @classmethod
     def import_fminute(cls, file):
@@ -156,12 +156,12 @@ class system_model:
         
     def simulate(self):
         # Run passive production
-        delta = pd.DataFrame(data=self.demand_obj.df['Demand'] - self.system_components['sol1'].solar_df['Production'], columns=['Demand'])
+        delta = pd.DataFrame(data=self.demand_obj.df['Demand'] - self.system_components['solar'].solar_df['Production'], columns=['Demand'])
         
         #Run controller
         storage_vals = []
         for demand_vals in delta['Demand']:
-            storage_vals.append(-self.system_components['cont1'].io(-demand_vals)) # Neg  values for demand
+            storage_vals.append(-self.system_components['controller'].io(-demand_vals)) # Neg  values for demand
         
         self.simulated_df = pd.DataFrame(data=storage_vals, columns=['Demand'])
         self.simulated_df.index.names = ['Hour']

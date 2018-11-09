@@ -62,19 +62,22 @@ for i in converter_range:
     converter_objs.append(converter(i, converter_base_cost, converter_power_cost))
 
 output = []
+system_temp = copy.copy(system)
 # Combine all combinations of components 
-for combinations in product(solar_range, storage_range, converter_range): 
-    system_temp = copy.copy(system)
-    controller = controller()
+for combinations in product(solar_objs, battery_objs, converter_objs): 
+    print(combinations)
+    control = controller()
     # Add all components to system
-    i=0
     for component in combinations: 
-        i+=1
-        system_temp.add_component(component, f'comp{i}')
-    system_temp.add_component(controller, 'cont1')
-    system_temp.system_components['cont1'].config_storage() ### HOW TO AUTO CONFIG BATTERIES
-    system_temp.system_components['cont1'].config_converter() ### HOW TO AUTO CONFIG CONVERTER
+        print(component)
+        system_temp.add_component(component, component.type)
+    system_temp.add_component(control, control.type)
+    system_temp.system_components['controller'].config_storage(system_temp.system_components['battery'], system_temp.system_components['battery'].type, 'solar_support') ### HOW TO AUTO CONFIG BATTERIES
+    system_temp.system_components['controller'].config_converter(system_temp.system_components['converter']) ### HOW TO AUTO CONFIG CONVERTER
     output.append(system_temp.simulate())
+    # Clear system:
+    for component in system_temp.system_components.copy():
+        system_temp.remove_component(component)
     
     
     
