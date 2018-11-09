@@ -22,6 +22,7 @@ class battery():
         self.energy_max = energy_capacity * 1000
         self.energy_rem = energy_capacity * 1000
         self.base_cost = base_cost
+        self.cost_component = True
         self.energy_cost = energy_cost 
         
     def charge(self, amt):
@@ -36,6 +37,7 @@ class converter():
         self.power = power*1000
         self.base_cost = base_cost
         self.power_cost = power_cost
+        self.cost_component = True
         self.capacity_rem = self.power
     
     def capacity_calc(self, amt):
@@ -52,6 +54,7 @@ class controller():
         self.type = 'controller'
         self.converter = None
         self.battery_list = {}
+        self.cost_component = False
         
     def config_converter(self, converter):
         self.converter = converter
@@ -104,13 +107,14 @@ class controller():
     def __str__(self):
         return f"{self.__dict__}"
     
-class solar:
+class solar():
     def __init__(self, solar_df, system_capacity, base_cost, perw_cost):
         self.type = 'solar'
         self.solar_df = solar_df
         self.system_capacity = system_capacity
         self.base_cost = base_cost
         self.perw_cost = perw_cost
+        self.cost_component = True
     
     @classmethod
     def run_api(cls, system_capacity, base_cost, perw_cost, output_format = 'json', api_key = 'NueBIZfkmWJUjd7MK5LRrIi7MhFL2LLuRlZswFcM',
@@ -127,6 +131,11 @@ class solar:
 
     def cost_calc(self):
         return self.base_cost + self.perw_cost*self.system_capacity*1000
+
+class grid():
+    def __init__(self, energy_cost):
+        self.energy_cost = energy_cost
+    
                                                     
 class system_model:  
     def __init__(self, demand_df):
@@ -167,6 +176,9 @@ class system_model:
         self.simulated_df.index.names = ['Hour']
         
         return sum(self.simulated_df['Demand'])
+    
+    def total_costs(self):
+        total_costs = 
                 
     def plot_demands(capacity_map, demands):
         plt.plot(capacity_map, demands)

@@ -8,11 +8,12 @@ Created on Wed Nov  7 10:32:23 2018
 from modules.mgrid_model import *
 import os
 import numpy as np
+import pandas as pd
 from itertools import product
 import copy
 
 # Solar Specs
-solar_range = np.linspace(10, 500, 3)
+solar_range = np.linspace(10, 500, 5)
 solar_base_cost = 10000
 solar_power_cost = 1.5*1000
 
@@ -30,17 +31,6 @@ converter_range = np.linspace(10, 500, 5)
 converter_power = 1000
 converter_base_cost =  1000
 converter_power_cost = 100
-
-# Create component objects
-#conv1 = converter(converter_power, converter_base_cost, converter_power_cost)
-#sol1 = solar.run_api(solar_power, solar_base_cost, solar_power_cost)
-#bat1 = battery(battery_capacity, battery_soc_min, battery_soc_max, 
-#               battery_efficiency, battery_base_cost, battery_energy_cost)
-#cont1 = controller()
-
-# Configure controller battery and converter
-#cont1.config_storage(bat1, 'bat1', 'solar_support')
-#cont1.config_converter(conv1)
 
 # Create system and add components
 file = os.path.join('data', 'dc_foods_2014.csv')
@@ -65,11 +55,9 @@ output = []
 system_temp = copy.copy(system)
 # Combine all combinations of components 
 for combinations in product(solar_objs, battery_objs, converter_objs): 
-    print(combinations)
     control = controller()
     # Add all components to system
     for component in combinations: 
-        print(component)
         system_temp.add_component(component, component.type)
     system_temp.add_component(control, control.type)
     system_temp.system_components['controller'].config_storage(system_temp.system_components['battery'], system_temp.system_components['battery'].type, 'solar_support') ### HOW TO AUTO CONFIG BATTERIES
@@ -79,7 +67,15 @@ for combinations in product(solar_objs, battery_objs, converter_objs):
     for component in system_temp.system_components.copy():
         system_temp.remove_component(component)
     
-    
+# Convert all component sizes to lists
+component_sizes = {'solar': [], 'battery': [], 'converter': []}
+for size in product(solar_range, storage_range, converter_range):
+    component_sizes['solar'].append(size[0])
+    component_sizes['battery'].append(size[1])
+    component_sizes['converter'].append(size[2])
+
+df = pd.DataFrame(data=component_sizes)
+df['output'] = output
     
     
     
