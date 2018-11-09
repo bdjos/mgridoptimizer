@@ -212,41 +212,41 @@ def regtrain_data(demand_file, solar_min, solar_max, solar_base_cost, solar_perw
     training_df.index.names = ['hours']
     return training_df   
      
-if __name__ == '__main__':
-    print('okay!')
-def regressionvals(demand_file, min_pv_size, max_pv_size, num_steps=3):
-    
-    # Merge DFs and generate consumption - production data sets to determine yearly
-    # energy consumption after PV install
-    df = pd.merge(demand_df, pv_df, on='Hour')
-    
-    demands = []
-    for i in range(len(pv_df.columns)):
-        df[f'Delta{i}'] = df['Demand'] - df[f'Production{i}']
-        df[f'Delta{i}'] = df[f'Delta{i}'].apply(lambda x: 0 if x<0 else x)
-        demand_tot = df[f'Delta{i}'].sum()
-        demands.append(demand_tot)
-    
-    return np.array(capacity_map), np.array(demands)
-        # Get PV data between min and max inputs
-    pv_df, capacity_map = run_api(min_pv_size, max_pv_size, num_steps)
-    # Get demand dataframe
-    demand_df = import_data.fifteenMinute(demand_file).df
-    
-    capacity_map = [1]
-    count = 1
-    
-    # Call pvwatts api on min system size = 1 to initialize
-    system_capacity=1
-    pv_df = get_pv(output_format, api_key, system_capacity, module_type, losses, array_type, tilt, azimuth, lat, lon, radius, timeframe, dc_ac_ratio)
-    pv_df.columns = ['Production0']
-    
-    # Call pvwatts api for num_steps between min and max size
-    for system_capacity in np.linspace(min_size, max_size, num_steps):
-        print(system_capacity)
-        temp_df = get_pv(output_format, api_key, str(system_capacity), module_type, losses, array_type, tilt, azimuth, lat, lon, radius, timeframe, dc_ac_ratio)
-        temp_df.columns = [f'Production{count}']
-        pv_df = pd.merge(pv_df, temp_df, on='Hour')
-        capacity_map.append(system_capacity)
-        count += 1
-    return pv_df, capacity_map
+#if __name__ == '__main__':
+#    print('okay!')
+#def regressionvals(demand_file, min_pv_size, max_pv_size, num_steps=3):
+#    
+#    # Merge DFs and generate consumption - production data sets to determine yearly
+#    # energy consumption after PV install
+#    df = pd.merge(demand_df, pv_df, on='Hour')
+#    
+#    demands = []
+#    for i in range(len(pv_df.columns)):
+#        df[f'Delta{i}'] = df['Demand'] - df[f'Production{i}']
+#        df[f'Delta{i}'] = df[f'Delta{i}'].apply(lambda x: 0 if x<0 else x)
+#        demand_tot = df[f'Delta{i}'].sum()
+#        demands.append(demand_tot)
+#    
+#    return np.array(capacity_map), np.array(demands)
+#        # Get PV data between min and max inputs
+#    pv_df, capacity_map = run_api(min_pv_size, max_pv_size, num_steps)
+#    # Get demand dataframe
+#    demand_df = import_data.fifteenMinute(demand_file).df
+#    
+#    capacity_map = [1]
+#    count = 1
+#    
+#    # Call pvwatts api on min system size = 1 to initialize
+#    system_capacity=1
+#    pv_df = get_pv(output_format, api_key, system_capacity, module_type, losses, array_type, tilt, azimuth, lat, lon, radius, timeframe, dc_ac_ratio)
+#    pv_df.columns = ['Production0']
+#    
+#    # Call pvwatts api for num_steps between min and max size
+#    for system_capacity in np.linspace(min_size, max_size, num_steps):
+#        print(system_capacity)
+#        temp_df = get_pv(output_format, api_key, str(system_capacity), module_type, losses, array_type, tilt, azimuth, lat, lon, radius, timeframe, dc_ac_ratio)
+#        temp_df.columns = [f'Production{count}']
+#        pv_df = pd.merge(pv_df, temp_df, on='Hour')
+#        capacity_map.append(system_capacity)
+#        count += 1
+#    return pv_df, capacity_map
