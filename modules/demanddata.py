@@ -78,6 +78,9 @@ class import_data:
             warning = f'''8760 values found'''
         
         return warning
+    
+    def cost_calc(self):
+        return 0
 
 if __name__ == "__main__":
     file = 'dc_foods_2014.csv'

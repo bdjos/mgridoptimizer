@@ -23,10 +23,22 @@ class battery():
         self.energy_rem = energy_capacity * 1000
         self.base_cost = base_cost
         self.cost_component = True
-        self.energy_cost = energy_cost 
+        self.energy_cost = energy_cost
+        self.counter = 0 # Counter for charge
+        self.stats = {
+            'hour': [],
+            'output': [],
+            'levels': [],
+            'soc': []
+            }
         
     def charge(self, amt):
         self.energy_rem += amt
+        self.stats['hour'].append(self.count)
+        self.stats['output'].append(amt)
+        self.stats['levels'].append(self.energy_rem)
+        self.stats['soc'].append(self.energy_rem/self.energy_max)
+        self.count += 1
     
     def cost_calc(self):
         return self.base_cost + self.energy_capacity*self.energy_cost      
@@ -39,9 +51,13 @@ class converter():
         self.power_cost = power_cost
         self.cost_component = True
         self.capacity_rem = self.power
+        self.stats = {
+                'output': []
+                }
     
     def capacity_calc(self, amt):
         self.capacity_rem = self.capacity_rem - abs(amt)
+        self.stats.append(amt)
     
     def reset_capacity(self):
         self.capacity_rem = self.power
@@ -50,6 +66,9 @@ class converter():
         return self.base_cost + self.power*self.power_cost   
 
 class controller():
+    """
+    Controls input and output of system stage 2 (controllable input/output such as generator/storage)
+    """
     def __init__(self):
         self.type = 'controller'
         self.converter = None
@@ -103,7 +122,10 @@ class controller():
             self.battery_list[battery]['object'].charge(charge) # Updte battery capacity
             amt = amt - charge    
         return amt
-
+    
+    def cost_calc():
+        return 0
+    
     def __str__(self):
         return f"{self.__dict__}"
     
@@ -133,56 +155,77 @@ class solar():
         return self.base_cost + self.perw_cost*self.system_capacity*1000
 
 class grid():
+    "Grid component for modelling grid input to system"
     def __init__(self, energy_cost):
         self.energy_cost = energy_cost
-    
-                                                    
-class system_model:  
-    def __init__(self, demand_df):
-        self.demand_obj = demand_df
-        self.system_components = {} # Holds all system components
+        self.total_supply = []
         
-    @classmethod
-    def import_fminute(cls, file):
-        '''
-        Import csv file and convert data to hourly demand data if 15 minute 
-        intervals. Convert to pd dataframe
-        '''
-        demand_df = import_data.fifteenMinute(file)
-        return cls(demand_df)
+    def supply(self, amt):
+        self.total_supply.append(amt)
     
-    def add_component(self, component, name):
+    def cost_calc(self):
+        return self.energy_cost * sum(self.total_supply)  
+                                                    
+class system_model():  
+    def __init__(self):
+#        self.demand_obj = demand_df
+        self.system_components = {} # Holds all system components
+        self.system_hierarchy = {'stage0': [], 'stage1': [], 'stage2': []}
+    
+#    @classmethod
+#    def import_fminute(cls, file):
+#        '''
+#        Import csv file and convert data to hourly demand data if 15 minute 
+#        intervals. Convert to pd dataframe
+#        '''
+#        demand_df = import_data.fifteenMinute(file)
+#        return cls(demand_df)
+    
+    def add_component(self, component, name, stage = None):
         if name in self.system_components:
             print(f'{name} already in system components. Either rename or remove existing component')
         else:
+            if stage:
+                self.system_hierarchy[stage].append(name)
             self.system_components[name] = component
+            
                         
     def remove_component(self, name):
         if name in self.system_components:
             del self.system_components[name]
         else:
             print(f'{name} is not in system')
-        
+         
     def simulate(self):
-        # Run passive production
-        delta = pd.DataFrame(data=self.demand_obj.df['Demand'] - self.system_components['solar'].solar_df['Production'], columns=['Demand'])
+        def stage0():
+            # Stage 1 operations are passive operations that occur to the system demand; e.g. passive ac-connected solar generation
+            # output of Stage 1 is negative (demand) and positive (supply) of passive components
+            return pd.DataFrame(data=self.system_components['solar'].solar_df['Production'] - self.demand_obj.df['Demand'], columns=['Demand'])
+            
+        def stage1(amt):
+            # Stage 2 operations occur at the controller; e.g generator/battery demand response, arbitrage, etc.
+            _output_vals = []
+            for demand_vals in amt['Demand']:
+                storage_vals.append(self.system_components['controller'].io(demand_vals)) # Neg  values for demand
+            
+            return pd.DataFrame(data=_output_vals, columns=['Demand'])
         
-        #Run controller
-        storage_vals = []
-        for demand_vals in delta['Demand']:
-            storage_vals.append(-self.system_components['controller'].io(-demand_vals)) # Neg  values for demand
-        
-        self.simulated_df = pd.DataFrame(data=storage_vals, columns=['Demand'])
-        self.simulated_df.index.names = ['Hour']
-        
-        return sum(self.simulated_df['Demand'])
+        def stage2(amt):
+            #Stage 3 operations occur on as-yet unfulfilled load
+            self.system_components['grid1'].supply(amt)
+               
+        demand = stage0
+        demand = stage1(demand)
+        stage2(demand)
+#        self.simulated_df.index.names = ['Hour']
+#        return sum(self.simulated_df['Demand'])
     
     def total_costs(self):
-        total_costs = 
-                
-    def plot_demands(capacity_map, demands):
-        plt.plot(capacity_map, demands)
-        plt.show()
+        "Calculate individual costs associated with each component"
+        total_costs = 0
+        for component in self.system_components:
+            total_costs = total_costs + self.system_components[component].cost_calc()
+        return total_costs
         
     def __str__(self):
         
