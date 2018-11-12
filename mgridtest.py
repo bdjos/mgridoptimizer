@@ -89,15 +89,15 @@ battery_soc_min = 10
 battery_soc_max = 90
 battery_efficiency = 0.95
 battery_base_cost = 10000
-battery_energy_cost = 1*500
+battery_energy_cost = 0.5
 
 # Converter Specs
 converter_power = 1000
 converter_base_cost =  1000
-converter_power_cost = 100
+converter_power_cost = 1
 
 # Grid Specs
-grid_cost = 0.25   
+grid_cost = 0.30 / 1000  
     
 # Create system model object
 system = system_model()    
@@ -118,7 +118,11 @@ system.add_component(conv1, 'conv1', 'stage1')
 system.add_component(grid1, 'grid1', 'stage2')
 system.add_component(cont1, 'cont1')
 
-#Configure controller
+# Configure controller
 cont1.config_converter(conv1)
 cont1.config_storage(bat1, 'bat1', mode='solar_support')
+
+# Simulate system
+system.simulate()
+print(system.total_costs())
 

@@ -15,7 +15,14 @@ import matplotlib.pyplot as plt
 import copy
 from modules.demanddata import import_data
 
-class battery():
+class cost_component():
+    def __init__(self, **costs):
+        self.cost_list = costs
+    
+    def cost_calc(self, years):
+        cost = self.build_costs + self.yearly_costs * years
+
+class battery(cost_component):
     def __init__(self, energy_capacity, soc_min, soc_max, efficiency, base_cost, energy_cost):
         self.type = 'battery'
         self.energy_capacity = energy_capacity * 1000
@@ -31,17 +38,18 @@ class battery():
             'levels': [],
             'soc': []
             }
+        self.build_costs = self.base_cost + self.energy_capacity*self.energy_cost 
+        self.yearly_costs = 0
         
     def charge(self, amt):
         self.energy_rem += amt
-        self.stats['hour'].append(self.count)
+        self.stats['hour'].append(self.counter)
         self.stats['output'].append(amt)
         self.stats['levels'].append(self.energy_rem)
         self.stats['soc'].append(self.energy_rem/self.energy_max)
-        self.count += 1
+        self.counter += 1
     
-    def cost_calc(self):
-        return self.base_cost + self.energy_capacity*self.energy_cost      
+      
 
 class converter():
     def __init__(self, power, base_cost, power_cost):
@@ -57,7 +65,7 @@ class converter():
     
     def capacity_calc(self, amt):
         self.capacity_rem = self.capacity_rem - abs(amt)
-        self.stats.append(amt)
+        self.stats['output'].append(amt)
     
     def reset_capacity(self):
         self.capacity_rem = self.power
@@ -123,7 +131,7 @@ class controller():
             amt = amt - charge    
         return amt
     
-    def cost_calc():
+    def cost_calc(self):
         return 0
     
     def __str__(self):
@@ -132,7 +140,7 @@ class controller():
 class solar():
     def __init__(self, solar_df, system_capacity, base_cost, perw_cost):
         self.type = 'solar'
-        self.solar_df = solar_df
+        self.demand = solar_df
         self.system_capacity = system_capacity
         self.base_cost = base_cost
         self.perw_cost = perw_cost
@@ -149,19 +157,20 @@ class solar():
             
         df = pd.DataFrame(data=data['outputs']['ac'], columns=['Production'])
         df.index.names = ['Hour']  
-        return cls(df, system_capacity, base_cost, perw_cost)    
+        return cls(list(df['Production']), system_capacity, base_cost, perw_cost)    
 
     def cost_calc(self):
-        return self.base_cost + self.perw_cost*self.system_capacity*1000
+        return self.base_cost + self.perw_cost*self.system_capacity
 
 class grid():
     "Grid component for modelling grid input to system"
-    def __init__(self, energy_cost):
+    def __init__(self, energy_cost, nm = False):
+        self.nm = nm
         self.energy_cost = energy_cost
         self.total_supply = []
         
     def supply(self, amt):
-        self.total_supply.append(amt)
+        self.total_supply = amt
     
     def cost_calc(self):
         return self.energy_cost * sum(self.total_supply)  
@@ -198,23 +207,30 @@ class system_model():
          
     def simulate(self):
         def stage0():
+            _output_vals = []
+            for component in self.system_hierarchy['stage0']:
+                if _output_vals == []:
+                    _output_vals = self.system_components[component].demand
+                else:
+                    _output_vals = [x + y for x, y in zip(_output_vals, self.system_components[component].demand)]
+                
             # Stage 1 operations are passive operations that occur to the system demand; e.g. passive ac-connected solar generation
             # output of Stage 1 is negative (demand) and positive (supply) of passive components
-            return pd.DataFrame(data=self.system_components['solar'].solar_df['Production'] - self.demand_obj.df['Demand'], columns=['Demand'])
+            return _output_vals
             
         def stage1(amt):
             # Stage 2 operations occur at the controller; e.g generator/battery demand response, arbitrage, etc.
             _output_vals = []
-            for demand_vals in amt['Demand']:
-                storage_vals.append(self.system_components['controller'].io(demand_vals)) # Neg  values for demand
+            for demand_vals in amt:
+                _output_vals.append(self.system_components['cont1'].io(demand_vals)) # Neg  values for demand
             
-            return pd.DataFrame(data=_output_vals, columns=['Demand'])
+            return _output_vals
         
         def stage2(amt):
             #Stage 3 operations occur on as-yet unfulfilled load
             self.system_components['grid1'].supply(amt)
                
-        demand = stage0
+        demand = stage0()
         demand = stage1(demand)
         stage2(demand)
 #        self.simulated_df.index.names = ['Hour']

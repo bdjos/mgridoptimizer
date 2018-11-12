@@ -12,7 +12,7 @@ class import_data:
         '''
         Return pandas dataframe object for a facility's electricity demand
         '''
-        self.df = df
+        self.demand = df
 
     @classmethod
     def fifteenMinute(cls, file):
@@ -40,7 +40,7 @@ class import_data:
         
         # Check length of dataframe
         print(cls.checkLength(df))
-        return cls(df)
+        return cls(list(df['Demand']))
     
     @classmethod
     def hourlyInterval(cls, file):
