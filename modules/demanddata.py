@@ -40,7 +40,7 @@ class import_data:
         
         # Check length of dataframe
         print(cls.checkLength(df))
-        return cls(list(df['Demand']))
+        return cls(list(-df['Demand']))
     
     @classmethod
     def hourlyInterval(cls, file):

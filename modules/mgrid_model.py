@@ -22,7 +22,7 @@ class cost_component():
     def cost_calc(self, years):
         cost = self.build_costs + self.yearly_costs * years
 
-class battery(cost_component):
+class battery():
     def __init__(self, energy_capacity, soc_min, soc_max, efficiency, base_cost, energy_cost):
         self.type = 'battery'
         self.energy_capacity = energy_capacity * 1000
@@ -49,8 +49,9 @@ class battery(cost_component):
         self.stats['soc'].append(self.energy_rem/self.energy_max)
         self.counter += 1
     
-      
-
+    def cost_calc(self):      
+        return self.base_cost + self.energy_capacity*self.energy_cost
+        
 class converter():
     def __init__(self, power, base_cost, power_cost):
         self.type = 'converter'
@@ -164,16 +165,21 @@ class solar():
 
 class grid():
     "Grid component for modelling grid input to system"
-    def __init__(self, energy_cost, nm = False):
+    def __init__(self, energy_cost, years, nm = False):
+        self.type = 'grid'
         self.nm = nm
         self.energy_cost = energy_cost
+        self.years = years
         self.total_supply = []
         
     def supply(self, amt):
-        self.total_supply = amt
+        self.total_supply = [-x for x in amt]
     
     def cost_calc(self):
-        return self.energy_cost * sum(self.total_supply)  
+        if self.nm == True: 
+            return self.energy_cost * sum(self.total_supply) * self.years
+        else: # price only supplied energy (positive values) if net metering not allowed
+            return self.energy_cost * sum([x for x in self.total_supply if x > 0]) * self.years
                                                     
 class system_model():  
     def __init__(self):
@@ -242,6 +248,9 @@ class system_model():
         for component in self.system_components:
             total_costs = total_costs + self.system_components[component].cost_calc()
         return total_costs
+    
+    def clear(self):
+        self.__init__()
         
     def __str__(self):
         
