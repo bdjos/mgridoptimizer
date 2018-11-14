@@ -21,23 +21,59 @@ from itertools import product
 import copy
 
 
-lr = 1e-3 # Set learning rate
+############### Input System Info #####################
+# Demand Specs
+file = os.path.join('data', 'dc_foods_2014.csv')
 
-# Define all input ranges
-solar_min = 10
-solar_max = 1000
-battery_min = 10
-battery_max = 1000
-converter_min = 10
+# Define all input ranges. min == max == 0 for no component. min == max == value for single component
+solar_min = 1000
+solar_max = 2000
+battery_min = 1000
+battery_max = 3000
+converter_min = 0
 converter_max = 1000
+
+# Num steps for component sizing between min and max. 
+# Higher = better accuracy, slower simulation time
+# Lower = lower accuracy, faster simulation time
+numsteps = 5
+
+# Project Specs
+project_years = 20
+
+# Solar Specs
+solar_base_cost = 10000
+solar_power_cost = 1.65*1000
+
+# Storage Specs
+battery_soc_min = 10
+battery_soc_max = 90
+battery_efficiency = 0.95
+battery_base_cost = 10000
+battery_energy_cost = 0.5
+
+# Converter Specs
+converter_base_cost =  10000
+converter_power_cost = 1
+
+# Grid Specs
+grid_cost = 0.30 / 1000  
+#########################################################
 
 
 # Run system model for all inputs
-training_df = mgridtest.multi_sim(solar_min, solar_max, battery_min, battery_max, converter_min, converter_max)
+training_df = mgridtest.multi_sim(file, solar_min, solar_max, battery_min, battery_max, converter_min, converter_max, numsteps,
+                                  project_years, solar_base_cost, solar_power_cost, battery_soc_min, battery_soc_max, 
+                                  battery_efficiency, battery_base_cost, battery_energy_cost, converter_base_cost, 
+                                  converter_power_cost, grid_cost)
+
+# Convert 
 X = np.array([training_df['solar'], training_df['battery'], training_df['converter']])
 X = X.transpose()
 y_demand = np.array([training_df['Demand']]).T
 y_cost = np.array([training_df['Cost']]).T
+
+lr = 1e-3 # Set learning rate
  
 # Initialize model for predicting lifetime demand using NN
 demand_model = regression_model(X, y_demand, lr) # Create regression model object
@@ -61,9 +97,10 @@ cost_nnmodel = TwoLayerNet(D_in, H, D_out)
 # Construct our loss function and an Optimizer. The call to model.parameters()
 # in the SGD constructor will contain the learnable parameters of the two
 # nn.Linear modules which are members of the model.
-criterion = torch.nn.MSELoss(reduction='sum')
-demand_optimizer = torch.optim.SGD(demand_nnmodel.parameters(), lr=1e-3)
+criterion = torch.nn.MSELoss(reduction='sum') # Loss Function
+demand_optimizer = torch.optim.SGD(demand_nnmodel.parameters(), lr=1e-3) 
 cost_optimizer = torch.optim.SGD(cost_nnmodel.parameters(), lr=1e-3)
+
 for t in range(500):
     # Forward pass: Compute predicted y by passing x to the model
     demand_pred = demand_nnmodel(demand_model.X_reg.type(torch.FloatTensor))
@@ -85,34 +122,43 @@ for t in range(500):
 # Generate x(solar size) and y(storage size) values for plotting. Save deregularized values
 x1=np.linspace(solar_min,solar_max,50)
 x2=np.linspace(battery_min, battery_max,50)
-x3=np.linspace(converter_min, converter_max)
+x3=np.linspace(converter_min, converter_max,50)
 X1, X2, X3 = np.meshgrid(x1, x2, x3)
-X1_resh = np.reshape(X1, X1.shape[0]*X1.shape[1])
-X2_resh = np.reshape(X2, X2.shape[0]*X2.shape[1])
-X3_resh = np.reshape(X3, X3.shape[0]*X3.shape[1])
+X1_resh = np.reshape(X1, X1.shape[0]*X1.shape[1]*X1.shape[2])
+X2_resh = np.reshape(X2, X2.shape[0]*X2.shape[1]*X2.shape[2])
+X3_resh = np.reshape(X3, X3.shape[0]*X3.shape[1]*X3.shape[2])
 X_comb = np.array([X1_resh, X2_resh, X3_resh]).T
 
-X_comb = torch.from_numpy(demand_model.regularize(X_comb, demand_model.reg_features['X_std'], demand_model.reg_features['X_mean'])).type(torch.FloatTensor)
+X_comb_reg = torch.from_numpy(demand_model.regularize(X_comb, demand_model.reg_features['X_std'], demand_model.reg_features['X_mean'])).type(torch.FloatTensor)
 
 # Create plot object and plot demand prediction
-fig = plt.figure(figsize=(10.5,8))
-ax = fig.add_subplot(111, projection='3d', xlabel = 'Solar Size', ylabel='Storage Size', zlabel='Demand (Wh)', aspect='equal')
+#fig = plt.figure(figsize=(10.5,8))
+#ax = fig.add_subplot(111, projection='3d', xlabel = 'Solar Size', ylabel='Storage Size', zlabel='Demand (Wh)', aspect='equal')
 
-Z = demand_nnmodel(X_comb)
-Z = demand_model.dereg(Z, demand_model.reg_features['y_std'], demand_model.reg_features['y_mean'])
-Z = torch.reshape(Z, (50,50)).detach().numpy()
-ax.plot_wireframe(X, Y, Z, color='black')
-plt.tight_layout()
+Z_demand = demand_nnmodel(X_comb_reg)
+Z_demand = demand_model.dereg(Z_demand, demand_model.reg_features['y_std'], demand_model.reg_features['y_mean'])
+#Z = torch.reshape(Z, (50,50)).detach().numpy()
+#ax.plot_wireframe(X, Y, Z, color='black')
+#plt.tight_layout()
 
 # Create plot object and plot cost prediction
-fig = plt.figure(figsize=(10.5,8))
-ax = fig.add_subplot(111, projection='3d', xlabel = 'Solar Size', ylabel='Storage Size', zlabel='Cost($)', aspect='equal')
+#fig = plt.figure(figsize=(10.5,8))
+#ax = fig.add_subplot(111, projection='3d', xlabel = 'Solar Size', ylabel='Storage Size', zlabel='Cost($)', aspect='equal')
 
-Z = cost_nnmodel(X_comb)
-Z = cost_model.dereg(Z, cost_model.reg_features['y_std'], cost_model.reg_features['y_mean'])
-Z = torch.reshape(Z, (50,50)).detach().numpy()
-ax.plot_wireframe(X, Y, Z, color='black')
-plt.tight_layout()
+Z_cost = cost_nnmodel(X_comb_reg)
+Z_cost = cost_model.dereg(Z_cost, cost_model.reg_features['y_std'], cost_model.reg_features['y_mean'])
+#Z = torch.reshape(Z, (50,50)).detach().numpy()
+#ax.plot_wireframe(X, Y, Z, color='black')
+#plt.tight_layout()
 
+# Plot grid demand and cost for all input configurations
+plt.figure(1, figsize=(9,3))
+plt.subplot(211)
+plt.plot(Z_demand.detach().numpy())
+plt.subplot(212)
+plt.plot(Z_cost.detach().numpy())
+plt.show()
 
-
+#Find minimum cost
+index = np.argmin(Z_cost.detach().numpy())
+min_cost = X_comb[index]

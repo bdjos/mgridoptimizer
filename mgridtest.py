@@ -14,35 +14,15 @@ from itertools import product
 import copy
 
 
-def multi_sim(solar_min, solar_max, battery_min, battery_max, converter_min, converter_max):
-    # Project Specs
-    project_years = 20
-    
-    # Demand Specs
-    file = os.path.join('data', 'dc_foods_2014.csv')
-    
-    # Solar Specs
-    solar_base_cost = 10000
-    solar_power_cost = 1.5*1000
-    
-    # Storage Specs
-    battery_soc_min = 10
-    battery_soc_max = 90
-    battery_efficiency = 0.95
-    battery_base_cost = 10000
-    battery_energy_cost = 0.5
-    
-    # Converter Specs
-    converter_base_cost =  1000
-    converter_power_cost = 1
-    
-    # Grid Specs
-    grid_cost = 0.30 / 1000  
+def multi_sim(file, solar_min, solar_max, battery_min, battery_max, converter_min, converter_max, numsteps,
+              project_years, solar_base_cost, solar_power_cost, battery_soc_min, battery_soc_max, 
+              battery_efficiency, battery_base_cost, battery_energy_cost, converter_base_cost, 
+              converter_power_cost, grid_cost):
         
     # Equipment Ranges
-    solar_range = np.linspace(solar_min, solar_max, 3)
-    storage_range = np.linspace(battery_min, battery_max, 3)
-    converter_range = np.linspace(converter_min, converter_max, 3)
+    solar_range = np.linspace(solar_min, solar_max, numsteps)
+    storage_range = np.linspace(battery_min, battery_max, numsteps)
+    converter_range = np.linspace(converter_min, converter_max, numsteps)
     
     # Create system model object
     system = system_model()    
@@ -53,14 +33,23 @@ def multi_sim(solar_min, solar_max, battery_min, battery_max, converter_min, con
     
     # Create component objects for ranges:
     for i in solar_range:
-        solar_objs.append(solar.run_api(i, solar_base_cost, solar_power_cost))
+        if i == 0:
+            solar_objs.append(None)
+        else:
+            solar_objs.append(solar.run_api(i, solar_base_cost, solar_power_cost))
     
     for i in storage_range:
-        battery_objs.append(battery(i, battery_soc_min, battery_soc_max,
-                   battery_efficiency, battery_base_cost, battery_energy_cost))
+        if i == 0:
+            battery_objs.append(None)
+        else:
+            battery_objs.append(battery(i, battery_soc_min, battery_soc_max,
+                       battery_efficiency, battery_base_cost, battery_energy_cost))
     
     for i in converter_range:
-        converter_objs.append(converter(i, converter_base_cost, converter_power_cost))
+        if i == 0:
+            converter_objs.append(None)
+        else:
+            converter_objs.append(converter(i, converter_base_cost, converter_power_cost))
     
     output = {
             'Demand': [],
@@ -73,26 +62,38 @@ def multi_sim(solar_min, solar_max, battery_min, battery_max, converter_min, con
     # Combine all combinations of components 
     for combinations in product(solar_objs, battery_objs, converter_objs): 
         # Define and add demand, controller and grid to system
-        cont1 = controller()
+        
         grid1 = grid(grid_cost, project_years)
-        system_temp.add_component(demand, 'demand', 'stage0')
-        system_temp.add_component(cont1, 'cont1')
+        system_temp.add_component(demand, 'demand', 'stage0') 
         system_temp.add_component(grid1, 'grid1', 'stage2')
         
         # Add all variable components to system
         for component in combinations: 
-            if component.type == 'solar':
-                stage = 'stage0'
-            elif component.type == 'battery':
-                stage = 'stage1'
-            elif component.type == 'converter':
-                stage = 'stage1'
-            system_temp.add_component(component, component.type, stage)
+            if component == None:
+                pass
+            else:
+                if component.type == 'solar':
+                    stage = 'stage0'
+                elif component.type == 'battery':
+                    stage = 'stage1'
+                elif component.type == 'converter':
+                    stage = 'stage1'
+                system_temp.add_component(component, component.type, stage)
         
-        print(system_temp.system_hierarchy)
-        # Configure controller
-        cont1.config_storage(system_temp.system_components['battery'], system_temp.system_components['battery'].type, 'solar_support') ### HOW TO AUTO CONFIG BATTERIES
-        cont1.config_converter(system_temp.system_components['converter']) ### HOW TO AUTO CONFIG CONVERTER
+        if not ('battery' in system_temp.system_components and 'converter' in system_temp.system_components): 
+            print('no')
+        
+        else:
+            print(system_temp.system_components)
+            cont1 = controller()
+            system_temp.add_component(cont1, 'cont1')
+        
+            # Configure controller
+            if 'battery' in system_temp.system_components:
+                cont1.config_storage(system_temp.system_components['battery'], system_temp.system_components['battery'].type, 'solar_support') ### HOW TO AUTO CONFIG BATTERIES
+            if 'converter' in system_temp.system_components:
+                cont1.config_converter(system_temp.system_components['converter']) ### HOW TO AUTO CONFIG CONVERTER
+        
         system_temp.simulate()
         output['Demand'].append(sum(grid1.total_supply))
         output['Cost'].append(system_temp.total_costs())
