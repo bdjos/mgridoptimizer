@@ -106,7 +106,7 @@ def multi_sim():
     df = pd.concat([df, pd.DataFrame(output)], axis=1)
     return df
 
-def single_sim():
+def single_sim(converter_power):
     # Project Specs
     project_years = 20
     
@@ -127,7 +127,7 @@ def single_sim():
     battery_energy_cost = 0.5
     
     # Converter Specs
-    converter_power = 1000
+    converter_power = converter_power
     converter_base_cost =  1000
     converter_power_cost = 1
     
@@ -159,6 +159,7 @@ def single_sim():
     
     # Simulate system
     system.simulate()
-    print(system.total_costs())
+    return system
 
-df = multi_sim()
+
+

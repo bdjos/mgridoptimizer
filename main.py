@@ -9,6 +9,7 @@ import sys
 sys.path.append('/models')
 
 import os
+import mgridtest
 from modules.mgrid_model import *
 from modules.regression_model import *
 from modules.nn_model import *
@@ -89,18 +90,15 @@ def run_model():
     df = pd.DataFrame(data=component_sizes)
     df['demand'] = output
     return df
+
+lr = 1e-3
 # Get system sizes and demands from PV Watts API. Returns numpy array
 
-training_df = run_model()
-X = np.array([training_df['solar'], training_df['storage'], training_df['converter']])
+training_df = mgridtest.multi_sim()
+X = np.array([training_df['solar'], training_df['battery'], training_df['converter']])
 X = X.transpose()
-y_demand = np.array([training_df['demand']]).T
-y_cost = np.array([training_df['lifecycle_cost']]).T
-
-def hypothesis(theta, X):
-   "Hypothesis function for overall energy demand"
-   X = regression_model.feature_expand(X)
-   return torch.mm(X, theta.transpose(0,1))[:,0]
+y_demand = np.array([training_df['Demand']]).T
+y_cost = np.array([training_df['Cost']]).T
  
 # Initialize model for predicting lifetime demand using NN
 demand_model = regression_model(X, y_demand, lr) # Create regression model object
@@ -115,7 +113,7 @@ cost_model.torch_inputs() # Convert numpy inputs to torch tensors
 # Neural Network model for both demand and total cost 
 # N is batch size; D_in is input dimension;
 # H is hidden dimension; D_out is output dimension.
-N, D_in, H, D_out = 64, 2, 100, 1
+N, D_in, H, D_out = 64, 3, 100, 1
 
 # Construct our model by instantiating the class defined above
 demand_nnmodel = TwoLayerNet(D_in, H, D_out)
