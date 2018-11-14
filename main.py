@@ -21,80 +21,19 @@ from itertools import product
 import copy
 
 
-def run_model():
-    
-    energy_cost = 0.30
-    
-    # Solar Specs
-    solar_range = np.linspace(10, 500, 5)
-    solar_base_cost = 10000
-    solar_power_cost = 1.5*1000
-    
-    # Storage Specs
-    storage_range = np.linspace(10, 500, 5)
-    battery_capacity = 500
-    battery_soc_min = 10
-    battery_soc_max = 90
-    battery_efficiency = 0.95
-    battery_base_cost = 10000
-    battery_energy_cost = 1*500
-    
-    # Converter Specs
-    converter_range = np.linspace(10, 500, 5)
-    converter_power = 1000
-    converter_base_cost =  1000
-    converter_power_cost = 100
-    
-    # Create system and add components
-    file = os.path.join('data', 'dc_foods_2014.csv')
-    system = system_model.import_fminute(file)
-    
-    solar_objs = []
-    battery_objs= []
-    converter_objs = []
-    
-    # Create component objects for ranges:
-    for i in solar_range:
-        solar_objs.append(solar.run_api(i, solar_base_cost, solar_power_cost))
-    
-    for i in storage_range:
-        battery_objs.append(battery(i, battery_soc_min, battery_soc_max,
-                   battery_efficiency, battery_base_cost, battery_energy_cost))
-    
-    for i in converter_range:
-        converter_objs.append(converter(i, converter_base_cost, converter_power_cost))
-    
-    output = []
-    system_temp = copy.copy(system)
-    # Combine all combinations of components 
-    for combinations in product(solar_objs, battery_objs, converter_objs): 
-        control = controller()
-        # Add all components to system
-        for component in combinations: 
-            system_temp.add_component(component, component.type)
-        system_temp.add_component(control, control.type)
-        system_temp.system_components['controller'].config_storage(system_temp.system_components['battery'], system_temp.system_components['battery'].type, 'solar_support') ### HOW TO AUTO CONFIG BATTERIES
-        system_temp.system_components['controller'].config_converter(system_temp.system_components['converter']) ### HOW TO AUTO CONFIG CONVERTER
-        output.append(system_temp.simulate())
-        # Clear system:
-        for component in system_temp.system_components.copy():
-            system_temp.remove_component(component)
-        
-    # Convert all component sizes to lists
-    component_sizes = {'solar': [], 'battery': [], 'converter': []}
-    for size in product(solar_range, storage_range, converter_range):
-        component_sizes['solar'].append(size[0])
-        component_sizes['battery'].append(size[1])
-        component_sizes['converter'].append(size[2])
-    
-    df = pd.DataFrame(data=component_sizes)
-    df['demand'] = output
-    return df
+lr = 1e-3 # Set learning rate
 
-lr = 1e-3
-# Get system sizes and demands from PV Watts API. Returns numpy array
+# Define all input ranges
+solar_min = 10
+solar_max = 1000
+battery_min = 10
+battery_max = 1000
+converter_min = 10
+converter_max = 1000
 
-training_df = mgridtest.multi_sim()
+
+# Run system model for all inputs
+training_df = mgridtest.multi_sim(solar_min, solar_max, battery_min, battery_max, converter_min, converter_max)
 X = np.array([training_df['solar'], training_df['battery'], training_df['converter']])
 X = X.transpose()
 y_demand = np.array([training_df['Demand']]).T
@@ -144,12 +83,14 @@ for t in range(500):
     cost_optimizer.step()
   
 # Generate x(solar size) and y(storage size) values for plotting. Save deregularized values
-x=np.linspace(min_pv_size,max(max_pv_size, max_storage_size),50)
-y=np.linspace(min_storage_size,max(max_pv_size,max_storage_size),50)
-X, Y = np.meshgrid(x, y)
-X_resh = np.reshape(X, X.shape[0]*X.shape[1])
-Y_resh = np.reshape(Y, Y.shape[0]*Y.shape[1])
-X_comb = np.array([X_resh, Y_resh]).T
+x1=np.linspace(solar_min,solar_max,50)
+x2=np.linspace(battery_min, battery_max,50)
+x3=np.linspace(converter_min, converter_max)
+X1, X2, X3 = np.meshgrid(x1, x2, x3)
+X1_resh = np.reshape(X1, X1.shape[0]*X1.shape[1])
+X2_resh = np.reshape(X2, X2.shape[0]*X2.shape[1])
+X3_resh = np.reshape(X3, X3.shape[0]*X3.shape[1])
+X_comb = np.array([X1_resh, X2_resh, X3_resh]).T
 
 X_comb = torch.from_numpy(demand_model.regularize(X_comb, demand_model.reg_features['X_std'], demand_model.reg_features['X_mean'])).type(torch.FloatTensor)
 

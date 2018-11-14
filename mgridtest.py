@@ -14,7 +14,7 @@ from itertools import product
 import copy
 
 
-def multi_sim():
+def multi_sim(solar_min, solar_max, battery_min, battery_max, converter_min, converter_max):
     # Project Specs
     project_years = 20
     
@@ -40,9 +40,9 @@ def multi_sim():
     grid_cost = 0.30 / 1000  
         
     # Equipment Ranges
-    solar_range = np.linspace(10, 500, 3)
-    storage_range = np.linspace(10, 500, 3)
-    converter_range = np.linspace(10, 500, 3)
+    solar_range = np.linspace(solar_min, solar_max, 3)
+    storage_range = np.linspace(battery_min, battery_max, 3)
+    converter_range = np.linspace(converter_min, converter_max, 3)
     
     # Create system model object
     system = system_model()    
