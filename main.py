@@ -26,35 +26,36 @@ import copy
 file = os.path.join('data', 'dc_foods_2014.csv')
 
 # Define all input ranges. min == max == 0 for no component. min == max == value for single component
-solar_min = 1000
+solar_min = 0
 solar_max = 2000
-battery_min = 1000
-battery_max = 3000
+battery_min = 0
+battery_max = 2000
 converter_min = 0
 converter_max = 1000
 
 # Num steps for component sizing between min and max. 
+# Recommended min numsteps =3, max numsteps = 10
 # Higher = better accuracy, slower simulation time
 # Lower = lower accuracy, faster simulation time
-numsteps = 5
+numsteps = 6
 
 # Project Specs
-project_years = 20
+project_years = 10
 
 # Solar Specs
 solar_base_cost = 10000
-solar_power_cost = 1.65*1000
+solar_power_cost = 1.60*1000
 
 # Storage Specs
-battery_soc_min = 10
-battery_soc_max = 90
+battery_soc_min = 0.2
+battery_soc_max = 0.9
 battery_efficiency = 0.95
 battery_base_cost = 10000
 battery_energy_cost = 0.5
 
 # Converter Specs
-converter_base_cost =  10000
-converter_power_cost = 1
+converter_base_cost =  5000
+converter_power_cost = 0.5
 
 # Grid Specs
 grid_cost = 0.30 / 1000  
@@ -101,7 +102,7 @@ criterion = torch.nn.MSELoss(reduction='sum') # Loss Function
 demand_optimizer = torch.optim.SGD(demand_nnmodel.parameters(), lr=1e-3) 
 cost_optimizer = torch.optim.SGD(cost_nnmodel.parameters(), lr=1e-3)
 
-for t in range(500):
+for t in range(1000):
     # Forward pass: Compute predicted y by passing x to the model
     demand_pred = demand_nnmodel(demand_model.X_reg.type(torch.FloatTensor))
     cost_pred = cost_nnmodel(cost_model.X_reg.type(torch.FloatTensor))

@@ -27,7 +27,8 @@ class cost_component():
 class battery():
     def __init__(self, energy_capacity, soc_min, soc_max, efficiency, base_cost, energy_cost):
         self.type = 'battery'
-        self.energy_capacity = energy_capacity * 1000
+        self.energy_capacity = energy_capacity * soc_max * 1000
+        self.floor = energy_capacity * soc_min * 1000
         self.energy_max = energy_capacity * 1000
         self.energy_rem = energy_capacity * 1000
         self.base_cost = base_cost
@@ -106,10 +107,10 @@ class controller():
             else:
                 return battery.energy_capacity - battery.energy_rem
         elif amt < 0: # Discharge if amt < 0
-            if abs(amt) < battery.energy_rem - 0:
+            if abs(amt) < battery.energy_rem - battery.floor:
                 return amt
             else:
-                return battery.energy_rem - 0
+                return battery.energy_rem - battery.floor
         else:
             return 0
     
