@@ -13,6 +13,7 @@ class import_data:
         Return pandas dataframe object for a facility's electricity demand
         '''
         self.demand = df
+        self.cost_component = False
 
     @classmethod
     def fifteenMinute(cls, file):

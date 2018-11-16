@@ -15,7 +15,7 @@ import copy
 
 
 def multi_sim(file, solar_min, solar_max, battery_min, battery_max, converter_min, converter_max, numsteps,
-              project_years, solar_base_cost, solar_power_cost, battery_soc_min, battery_soc_max, 
+              project_years, interest, inflation, solar_base_cost, solar_power_cost, battery_soc_min, battery_soc_max, 
               battery_efficiency, battery_base_cost, battery_energy_cost, converter_base_cost, 
               converter_power_cost, grid_cost):
         
@@ -63,7 +63,7 @@ def multi_sim(file, solar_min, solar_max, battery_min, battery_max, converter_mi
     for combinations in product(solar_objs, battery_objs, converter_objs): 
         # Define and add demand, controller and grid to system
         
-        grid1 = grid(grid_cost, project_years)
+        grid1 = grid(grid_cost)
         system_temp.add_component(demand, 'demand', 'stage0') 
         system_temp.add_component(grid1, 'grid1', 'stage2')
         
@@ -81,10 +81,9 @@ def multi_sim(file, solar_min, solar_max, battery_min, battery_max, converter_mi
                 system_temp.add_component(component, component.type, stage)
         
         if not ('battery' in system_temp.system_components and 'converter' in system_temp.system_components): 
-            print('no')
+            next
         
         else:
-            print(system_temp.system_components)
             cont1 = controller()
             system_temp.add_component(cont1, 'cont1')
         
@@ -95,8 +94,9 @@ def multi_sim(file, solar_min, solar_max, battery_min, battery_max, converter_mi
                 cont1.config_converter(system_temp.system_components['converter']) ### HOW TO AUTO CONFIG CONVERTER
         
         system_temp.simulate()
+        system_temp.system_components['grid1'].cost_calc()
         output['Demand'].append(sum(grid1.total_supply))
-        output['Cost'].append(system_temp.total_costs())
+        output['Cost'].append(system_temp.cost_sim(project_years, interest, inflation))
         
         # Clear system:
         system_temp.clear()

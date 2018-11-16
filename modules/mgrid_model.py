@@ -13,6 +13,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import copy
+import math
 from modules.demanddata import import_data
 
 class cost_component():
@@ -41,8 +42,10 @@ class battery():
             'levels': [],
             'soc': []
             }
-        self.build_costs = self.base_cost + self.energy_capacity*self.energy_cost 
-        self.yearly_costs = 0
+        self.cost_list = {
+                'base_cost': self.base_cost + self.energy_capacity*self.energy_cost,
+                'yearly_cost': 0
+                }
         
     def charge(self, amt):
         self.energy_rem += amt
@@ -51,9 +54,6 @@ class battery():
         self.stats['levels'].append(self.energy_rem)
         self.stats['soc'].append(self.energy_rem/self.energy_max)
         self.counter += 1
-    
-    def cost_calc(self):      
-        return self.base_cost + self.energy_capacity*self.energy_cost
         
 class converter():
     def __init__(self, power, base_cost, power_cost):
@@ -66,6 +66,10 @@ class converter():
         self.stats = {
                 'output': []
                 }
+        self.cost_list = {
+                'base_cost': self.base_cost + self.power*self.power_cost,
+                'yearly_cost': 0
+                }
     
     def capacity_calc(self, amt):
         self.capacity_rem = self.capacity_rem - abs(amt)
@@ -73,9 +77,6 @@ class converter():
     
     def reset_capacity(self):
         self.capacity_rem = self.power
-        
-    def cost_calc(self):
-        return self.base_cost + self.power*self.power_cost   
 
 class controller():
     """
@@ -86,6 +87,10 @@ class controller():
         self.converter = None
         self.battery_list = {}
         self.cost_component = False
+        self.cost_list = {
+                'base_cost': 0,
+                'yearly_cost': 0
+                }
         
     def config_converter(self, converter):
         self.converter = converter
@@ -149,6 +154,10 @@ class solar():
         self.base_cost = base_cost
         self.perw_cost = perw_cost
         self.cost_component = True
+        self.cost_list = {
+                'base_cost': self.base_cost + self.perw_cost*self.system_capacity,
+                'yearly_cost': 0
+                }
     
     @classmethod
     def run_api(cls, system_capacity, base_cost, perw_cost, output_format = 'json', api_key = 'NueBIZfkmWJUjd7MK5LRrIi7MhFL2LLuRlZswFcM',
@@ -163,41 +172,33 @@ class solar():
         df.index.names = ['Hour']  
         return cls(list(df['Production']), system_capacity, base_cost, perw_cost)    
 
-    def cost_calc(self):
-        return self.base_cost + self.perw_cost*self.system_capacity
-
 class grid():
     "Grid component for modelling grid input to system"
-    def __init__(self, energy_cost, years, nm = False):
+    def __init__(self, energy_cost, nm = False):
         self.type = 'grid'
         self.nm = nm
         self.energy_cost = energy_cost
-        self.years = years
         self.total_supply = []
+        self.cost_component = True
+        self.cost_list = {
+                'base_cost': 0,
+                'yearly_cost': 0
+                }
         
     def supply(self, amt):
         self.total_supply = [-x for x in amt]
     
     def cost_calc(self):
         if self.nm == True: 
-            return self.energy_cost * sum(self.total_supply) * self.years
+            self.cost_list['yearly_cost'] = self.energy_cost * sum(self.total_supply)
         else: # price only supplied energy (positive values) if net metering not allowed
-            return self.energy_cost * sum([x for x in self.total_supply if x > 0]) * self.years
+            self.cost_list['yearly_cost'] = self.energy_cost * sum([x for x in self.total_supply if x > 0])
                                                     
 class system_model():  
     def __init__(self):
 #        self.demand_obj = demand_df
         self.system_components = {} # Holds all system components
         self.system_hierarchy = {'stage0': [], 'stage1': [], 'stage2': []}
-    
-#    @classmethod
-#    def import_fminute(cls, file):
-#        '''
-#        Import csv file and convert data to hourly demand data if 15 minute 
-#        intervals. Convert to pd dataframe
-#        '''
-#        demand_df = import_data.fifteenMinute(file)
-#        return cls(demand_df)
     
     def add_component(self, component, name, stage = None):
         if name in self.system_components:
@@ -207,7 +208,6 @@ class system_model():
                 self.system_hierarchy[stage].append(name)
             self.system_components[name] = component
             
-                        
     def remove_component(self, name):
         if name in self.system_components:
             del self.system_components[name]
@@ -246,12 +246,20 @@ class system_model():
 #        self.simulated_df.index.names = ['Hour']
 #        return sum(self.simulated_df['Demand'])
     
-    def total_costs(self):
+    def cost_sim(self, project_years, interest, inflation):
         "Calculate individual costs associated with each component"
-        total_costs = 0
+        base_costs = 0
+        yearly_costs = 0
         for component in self.system_components:
-            total_costs = total_costs + self.system_components[component].cost_calc()
-        return total_costs
+            if self.system_components[component].cost_component:
+                base_costs = base_costs + self.system_components[component].cost_list['base_cost']
+                yearly_costs = yearly_costs + self.system_components[component].cost_list['yearly_cost']
+        base_costs = base_costs * (1+inflation)**project_years
+        total_yearly_costs = []
+        for year in range(project_years):
+            total_yearly_costs.append(yearly_costs*(1+interest)**year)
+        return base_costs + sum(total_yearly_costs)
+        
     
     def clear(self):
         self.__init__()
@@ -263,36 +271,5 @@ class system_model():
             components = component + components
         return components
 
-def regtrain_data(demand_file, solar_min, solar_max, solar_base_cost, solar_perw_cost, storage_min, 
-                  storage_max, storage_base_cost, storage_energy_cost, converter_max, converter_base_cost, 
-                  converter_power_cost, numsteps_solar, numsteps_storage, energy_cost, lifecycle):
-    """
-    Run system model on solar_min to solar_max & storage_min to storage_max. Simulate
-    data on demand_file. Return results in pd df.
-    """
-    system_arch = system_model.import_fminute(demand_file) # Initialize system model archetype
-    reg_vals = {'solar_capacity': [], 'storage_capacity': [], 'converter_capacity': [], 
-                'system_cost': [], 'demand': [], 'lifecycle_cost': []}
-    
-    #Loop through all solar and storage capacities to create training data
-    for solar_capacities in np.linspace(solar_min, solar_max, numsteps_solar):
-        model_temp = copy.copy(system_arch)
-        model_temp.add_component(solar_capacities, solar_base_cost, solar_perw_cost)
-        for storage_capacities in np.linspace(storage_min, storage_max, numsteps_storage):
-            model_temp.add_component(storage_capacities, storage_capacities, storage_base_cost, 
-                  storage_power_cost, storage_energy_cost)
-            for converter_capacities in np.linspace(converter_min, converter_max, numsteps_converter):
-                model_temp.add_component()
-                demand = model_temp.simulate()
-            
-                reg_vals['solar_capacity'].append(solar_capacities)
-                reg_vals['storage_capacity'].append(storage_capacities)
-                reg_vals['converter_capacity'].append(converter_capacities)
-                reg_vals['system_cost'].append(model_temp.system_cost)
-                reg_vals['demand'].append(demand)
-                reg_vals['lifecycle_cost'].append(model_temp.system_cost + energy_cost*demand*lifecycle)
-            
-    training_df = pd.DataFrame(reg_vals)
-    training_df.index.names = ['hours']
-    return training_df   
+
      
