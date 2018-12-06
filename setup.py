@@ -6,6 +6,6 @@ setup(
    description='Model and optimize a microgrid/grid connected DER system',
    author='Brian Joseph',
    author_email='briandjoseph@gmail.com',
-   packages=['mgridoptimizer',]
+   packages=['mgridoptimizer',],
    install_requires=['pandas', 'matplotlib'], #external packages as dependencies
 )
