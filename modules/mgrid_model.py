@@ -7,6 +7,7 @@ Created on Fri Oct 12 13:05:11 2018
 
 import sys
 import os
+sys.path.insert(0, os.path.join('..'))
 import json
 import urllib.request
 import pandas as pd
@@ -147,9 +148,10 @@ class controller():
         return f"{self.__dict__}"
     
 class solar():
-    def __init__(self, solar_df, system_capacity, base_cost, perw_cost):
+    def __init__(self, solar_df, json_demand, system_capacity, base_cost, perw_cost):
         self.type = 'solar'
         self.demand = solar_df
+        self.json_demand = json_demand
         self.system_capacity = system_capacity
         self.base_cost = base_cost
         self.perw_cost = perw_cost
@@ -170,7 +172,7 @@ class solar():
             
         df = pd.DataFrame(data=data['outputs']['ac'], columns=['Production'])
         df.index.names = ['Hour']  
-        return cls(list(df['Production']), system_capacity, base_cost, perw_cost)    
+        return cls(list(df['Production']), data['outputs']['ac'], system_capacity, base_cost, perw_cost)    
 
 class grid():
     "Grid component for modelling grid input to system"
@@ -271,5 +273,7 @@ class system_model():
             components = component + components
         return components
 
-
+if __name__ == "__main__":
+    a = solar.run_api(500, 500, 1)
+    print(a.json_demand)
      
