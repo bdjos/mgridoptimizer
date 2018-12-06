@@ -15,7 +15,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import copy
 import math
-from modules.demanddata import import_data
+from mgridoptimizer.modules.demanddata import import_data
 
 class cost_component():
     # Used to define a cost calculation from a component. Build this out as 
