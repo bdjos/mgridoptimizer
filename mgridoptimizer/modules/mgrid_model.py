@@ -17,7 +17,7 @@ import copy
 import math
 from mgridoptimizer.modules.demanddata import import_data
 
-class cost_component():
+class Cost_Component():
     # Used to define a cost calculation from a component. Build this out as 
     # parent obj to all cost components to simplify code
     def __init__(self, **costs):
@@ -26,7 +26,83 @@ class cost_component():
     def cost_calc(self, years):
         cost = self.build_costs + self.yearly_costs * years
 
-class battery():
+class Demand:
+    def __init__(self, df):
+        '''
+        Return pandas dataframe object for a facility's electricity demand
+        '''
+        self.demand = df
+        self.cost_component = False
+
+    @classmethod
+    def fifteenMinute(cls, file):
+        '''
+        Import csv file and convert data to hourly demand data if 15 minute
+        intervals. Convert to pd dataframe
+        '''
+
+        # Import from CSV
+        df = pd.read_csv(file, names=['Demand'])
+
+        # Convert to Watts
+        df['Demand'] = df['Demand'] * 1000
+
+        # Create list of hours for 15 minute interval data to convert to hourly data
+        hour_list = []
+        for hour in range(8760):
+            for count in range(4):
+                hour_list.append(hour)
+
+        df['Hour'] = hour_list
+
+        # Convert to hourly data: Group by hours and average to find hourly energy consumption
+        df = df.groupby(by='Hour').mean()
+
+        # Check length of dataframe
+        print(cls.checkLength(df))
+        return cls(list(-df['Demand']))
+
+    @classmethod
+    def hourlyInterval(cls, file):
+        '''
+        Import csv file and convert to pd dataframe
+        '''
+        df = pd.read_csv(file, names=['Demand'])
+        df.index.names = ['Hour']
+
+        # Check length of dataframe
+        print(cls.checkLength(df))
+
+        return cls(df)
+
+    @classmethod
+    def checkLength(cls, df):
+        '''
+        Check length of dataframe to ensure that length is one year (8760 hours).
+        Return warning message if length is above/below this value
+        '''
+
+        if len(df) < 8760:
+            warning = f'''Dataframe length is less than 8760 hours ({len(df)} 
+            points). If you continue, analysis will occur on only the first
+            {len(df)} points, corresponding to Jan-1 00:00:00 onwards. This may 
+            give a sub-optimal result.
+            '''
+        elif len(df) > 8760:
+            warning = f'''Dataframe length is greater than 8760 hours ({len(df)} 
+            points). If you continue, analysis will occur on the first 8760 points, 
+            corresponding to Jan-1 00:00:00 to Dec-31 23:00:00))This may give a 
+            sub-optimal result.
+            '''
+        else:
+            warning = f'''8760 values found'''
+
+        return warning
+
+    def cost_calc(self):
+        return 0
+
+class Battery():
     def __init__(self, energy_capacity, soc_min, soc_max, efficiency, base_cost, energy_cost):
         self.type = 'battery'
         self.energy_capacity = energy_capacity * soc_max * 1000
@@ -56,7 +132,7 @@ class battery():
         self.stats['soc'].append(self.energy_rem/self.energy_max)
         self.counter += 1
         
-class converter():
+class Converter():
     def __init__(self, power, base_cost, power_cost):
         self.type = 'converter'
         self.power = power*1000
@@ -79,7 +155,7 @@ class converter():
     def reset_capacity(self):
         self.capacity_rem = self.power
 
-class controller():
+class Controller():
     """
     Controls input and output of system stage 2 (controllable input/output such as generator/storage)
     """
@@ -147,7 +223,7 @@ class controller():
     def __str__(self):
         return f"{self.__dict__}"
     
-class solar():
+class Solar():
     def __init__(self, solar_df, json_demand, system_capacity, base_cost, perw_cost):
         self.type = 'solar'
         self.demand = solar_df
@@ -174,7 +250,7 @@ class solar():
         df.index.names = ['Hour']  
         return cls(list(df['Production']), data['outputs']['ac'], system_capacity, base_cost, perw_cost)    
 
-class grid():
+class Grid():
     "Grid component for modelling grid input to system"
     def __init__(self, energy_cost, nm = False):
         self.type = 'grid'
@@ -196,7 +272,7 @@ class grid():
         else: # price only supplied energy (positive values) if net metering not allowed
             self.cost_list['yearly_cost'] = self.energy_cost * sum([x for x in self.total_supply if x > 0])
                                                     
-class system_model():  
+class System_Model():
     def __init__(self):
 #        self.demand_obj = demand_df
         self.system_components = {} # Holds all system components

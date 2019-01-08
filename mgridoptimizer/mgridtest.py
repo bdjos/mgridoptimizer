@@ -5,13 +5,14 @@ Created on Wed Nov  7 10:32:23 2018
 @author: BJoseph
 """
 
-from modules.mgrid_model import *
-from modules.demanddata import import_data
+from modules.mgrid_model import Demand, Battery, Converter, Controller, Solar, Generator, Grid, System_Model
+# from modules.demanddata import import_data
 import os
 import numpy as np
 import pandas as pd
 from itertools import product
 import copy
+import json
 
 
 def multi_sim(file, solar_min, solar_max, battery_min, battery_max, converter_min, converter_max, numsteps,
@@ -161,6 +162,5 @@ def single_sim(converter_power):
     # Simulate system
     system.simulate()
     return system
-
 
 
