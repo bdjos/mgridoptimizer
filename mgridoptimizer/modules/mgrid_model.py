@@ -102,6 +102,9 @@ class Demand:
     def cost_calc(self):
         return 0
 
+    def output(self):
+        return self.df
+
 class Battery():
     def __init__(self, energy_capacity, soc_min, soc_max, efficiency, base_cost, energy_cost):
         self.type = 'battery'
@@ -132,6 +135,9 @@ class Battery():
         self.stats['soc'].append(self.energy_rem/self.energy_max)
         self.counter += 1
         
+    def output(self):
+        return pd.DataFrame(data=self.stats)
+
 class Converter():
     def __init__(self, power, base_cost, power_cost):
         self.type = 'converter'
@@ -159,7 +165,8 @@ class Controller():
     """
     Controls input and output of system stage 2 (controllable input/output such as generator/storage)
     """
-    def __init__(self):
+    def __init__(self, active):
+        self.active = active
         self.type = 'controller'
         self.converter = None
         self.battery_list = {}
@@ -176,7 +183,7 @@ class Controller():
             if mode == 'ab':
                 configs = {'buy_range': buy_range, 'sell_range': sell_range}
 
-            self.battery_list[name] = {'object': battery, 'mode': mode, 'configs': configs}
+            self.battery_list[name] = {'object': component_object, 'mode': mode, 'configs': configs}
 
         elif component_object.type == 'converter':
             self.converter = component_object
@@ -219,8 +226,8 @@ class Controller():
     def cost_calc(self):
         return 0
     
-    def __str__(self):
-        return f"{self.__dict__}"
+    # def __str__(self):
+    #     return f"{self.__dict__}"
     
 class Solar():
     def __init__(self, solar_df, json_demand, system_capacity, base_cost, perw_cost):
@@ -275,7 +282,7 @@ class System_Model():
     def __init__(self):
 #        self.demand_obj = demand_df
         self.system_components = {} # Holds all system components
-        self.system_hierarchy = {'stage0': [], 'stage1': [], 'stage2': []}
+        self.system_hierarchy = {'0': [], '1': [], '2': []}
     
     def add_component(self, component, name, stage = None):
         if name in self.system_components:
@@ -294,7 +301,7 @@ class System_Model():
     def simulate(self):
         def stage0():
             _output_vals = []
-            for component in self.system_hierarchy['stage0']:
+            for component in self.system_hierarchy['0']:
                 if _output_vals == []:
                     _output_vals = self.system_components[component].demand
                 else:
@@ -314,7 +321,7 @@ class System_Model():
         
         def stage2(amt):
             #Stage 3 operations occur on as-yet unfulfilled load
-            self.system_components['grid1'].supply(amt)
+            self.system_components['grd1'].supply(amt)
                
         demand = stage0()
         if 'cont1' in self.system_components:
