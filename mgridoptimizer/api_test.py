@@ -40,6 +40,9 @@ def api_sim(system_input, demand_file):
 
     print(system.system_components)
 
+    for component in system.system_components:
+        print(system.system_components[component].output())
+
 demand_file = 'data/test_data.csv'
 system_input = {
     'components': {

@@ -103,7 +103,7 @@ class Demand:
         return 0
 
     def output(self):
-        return self.df
+        return self.demand
 
 class Battery():
     def __init__(self, energy_capacity, soc_min, soc_max, efficiency, base_cost, energy_cost):
@@ -136,7 +136,7 @@ class Battery():
         self.counter += 1
         
     def output(self):
-        return pd.DataFrame(data=self.stats)
+        return self.stats
 
 class Converter():
     def __init__(self, power, base_cost, power_cost):
@@ -160,6 +160,9 @@ class Converter():
     
     def reset_capacity(self):
         self.capacity_rem = self.power
+
+    def output(self):
+        return self.stats
 
 class Controller():
     """
@@ -225,6 +228,9 @@ class Controller():
     
     def cost_calc(self):
         return 0
+
+    def output(self):
+        return None
     
     # def __str__(self):
     #     return f"{self.__dict__}"
@@ -254,7 +260,10 @@ class Solar():
             
         df = pd.DataFrame(data=data['outputs']['ac'], columns=['Production'])
         df.index.names = ['Hour']  
-        return cls(list(df['Production']), data['outputs']['ac'], system_capacity, base_cost, perw_cost)    
+        return cls(list(df['Production']), data['outputs']['ac'], system_capacity, base_cost, perw_cost)
+
+    def output(self):
+        return self.demand
 
 class Grid():
     "Grid component for modelling grid input to system"
@@ -277,6 +286,9 @@ class Grid():
             self.cost_list['yearly_cost'] = self.energy_cost * sum(self.total_supply)
         else: # price only supplied energy (positive values) if net metering not allowed
             self.cost_list['yearly_cost'] = self.energy_cost * sum([x for x in self.total_supply if x > 0])
+
+    def output(self):
+        return self.total_supply
                                                     
 class System_Model():
     def __init__(self):
