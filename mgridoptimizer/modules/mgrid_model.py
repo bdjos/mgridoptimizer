@@ -169,19 +169,18 @@ class Controller():
                 'yearly_cost': 0
                 }
         
-    def config_converter(self, converter):
-        self.converter = converter
-        
-    def config_storage(self, battery, name, mode):
-#        if battery.idx in battery_list:
-#            storage[battery.idx]
-        if mode == 'solar_support':
-            configs = None
-        if mode == 'arbitrage':
-            configs = {'buy_range': buy_range, 'sell_range': sell_range}
-        
-        self.battery_list[name] = {'object': battery, 'mode': mode, 'configs': configs}
-    
+    def config_component(self, component_object, name, mode):
+        if component_object.type == 'battery':
+            if mode == 'ss':
+                configs = None
+            if mode == 'ab':
+                configs = {'buy_range': buy_range, 'sell_range': sell_range}
+
+            self.battery_list[name] = {'object': battery, 'mode': mode, 'configs': configs}
+
+        elif component_object.type == 'converter':
+            self.converter = component_object
+
     def check_solar_support(self, battery, amt):
         if amt > 0: # Charge if amt > 0
             if amt < battery.energy_capacity - battery.energy_rem:
@@ -205,11 +204,11 @@ class Controller():
     def io(self, amt):
         self.converter.reset_capacity()
         for battery in self.battery_list:
-            if self.battery_list[battery]['mode'] == 'solar_support':
+            if self.battery_list[battery]['mode'] == 'ss':
                 charge = self.check_solar_support(self.battery_list[battery]['object'], amt)
-            elif self.battery_list[battery]['mode'] == 'arbitrage':
+            elif self.battery_list[battery]['mode'] == 'ab':
                 charge = self.check_arbitrage(battery['object'], amt)
-            elif self.battery_list[battery]['mode'] == 'peak_shaving':
+            elif self.battery_list[battery]['mode'] == 'ps':
                 charge = self.check_peak_shaving(battery['object'], amt)
             charge = self.check_converter(charge)
             self.converter.capacity_calc(charge) # Update Converter capacity available

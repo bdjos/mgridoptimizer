@@ -130,7 +130,7 @@ def single_sim(converter_power):
     
     # Converter Specs
     converter_power = converter_power
-    converter_base_cost =  1000
+    converter_base_cost = 1000
     converter_power_cost = 1
     
     # Grid Specs
