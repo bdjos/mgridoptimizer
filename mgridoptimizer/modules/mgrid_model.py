@@ -117,7 +117,6 @@ class Battery():
         self.energy_cost = energy_cost
         self.counter = 0 # Counter for charge
         self.stats = {
-            'hour': [],
             'output': [],
             'levels': [],
             'soc': []

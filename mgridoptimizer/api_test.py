@@ -1,4 +1,5 @@
 from mgridoptimizer.modules.mgrid_model import Demand, Battery, Converter, Controller, Solar, Grid, System_Model
+import os
 import json
 
 def api_sim(system_input, demand_file):
@@ -45,7 +46,7 @@ def api_sim(system_input, demand_file):
     return data
 
 def test_api():
-    demand_file = 'data/test_data.csv'
+    demand_file = os.path.join(os.path.dirname(__file__), 'data/test_data.csv')
     system_input = {
         'components': {
                     'dmn1': {
