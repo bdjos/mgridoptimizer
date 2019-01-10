@@ -1,4 +1,4 @@
-from modules.mgrid_model import Demand, Battery, Converter, Controller, Solar, Grid, System_Model
+from mgridoptimizer.modules.mgrid_model import Demand, Battery, Converter, Controller, Solar, Grid, System_Model
 import json
 
 def api_sim(system_input, demand_file):
