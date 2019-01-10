@@ -287,7 +287,7 @@ class Grid():
             self.cost_list['yearly_cost'] = self.energy_cost * sum([x for x in self.total_supply if x > 0])
 
     def output(self):
-        return {'demand': self.total_supply}
+        return {'demand': self.total_supply*-1}
                                                     
 class System_Model():
     def __init__(self):

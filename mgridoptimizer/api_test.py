@@ -92,25 +92,25 @@ def test_api():
                             'mode': 'ss'
                         }
                     },
-                    'btt2': {
-                        'id': 4,
-                        'system_name_id': 1,
-                        'comp_type': 'battery',
-                        'comp_num': 4,
-                        'zone': 1,
-                        'input': {
-                            'energy_capacity': 800,
-                            'soc_min': 20,
-                            'soc_max': 80,
-                            'efficiency': 0.98,
-                            'base_cost': 15000,
-                            'energy_cost': 1.7
-                        },
-                        'configure': {
-                            'configured': True,
-                            'mode': 'ss'
-                        }
-                    },
+                    # 'btt2': {
+                    #     'id': 4,
+                    #     'system_name_id': 1,
+                    #     'comp_type': 'battery',
+                    #     'comp_num': 4,
+                    #     'zone': 1,
+                    #     'input': {
+                    #         'energy_capacity': 800,
+                    #         'soc_min': 20,
+                    #         'soc_max': 80,
+                    #         'efficiency': 0.98,
+                    #         'base_cost': 15000,
+                    #         'energy_cost': 1.7
+                    #     },
+                    #     'configure': {
+                    #         'configured': True,
+                    #         'mode': 'ss'
+                    #     }
+                    # },
                     'cnv1': {
                         'id': 5,
                         'system_name_id': 1,
