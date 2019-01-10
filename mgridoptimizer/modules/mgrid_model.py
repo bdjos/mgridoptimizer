@@ -229,7 +229,7 @@ class Controller():
         return 0
 
     def output(self):
-        return None
+        return {'demand': []}
     
     # def __str__(self):
     #     return f"{self.__dict__}"
