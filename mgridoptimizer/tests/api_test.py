@@ -154,7 +154,7 @@ def test_api():
 
     system_output = api_sim(system_input, demand_file)
 
-    return system_output
+    return system_input
 
 if __name__ == "__main__":
     test_api()

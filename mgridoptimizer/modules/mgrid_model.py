@@ -103,7 +103,7 @@ class Demand:
         return 0
 
     def output(self):
-        return self.demand
+        return {'demand': self.demand}
 
 class Battery():
     def __init__(self, energy_capacity, soc_min, soc_max, efficiency, base_cost, energy_cost):
@@ -263,7 +263,7 @@ class Solar():
         return cls(list(df['Production']), data['outputs']['ac'], system_capacity, base_cost, perw_cost)
 
     def output(self):
-        return self.demand
+        return {'production': self.demand}
 
 class Grid():
     "Grid component for modelling grid input to system"
@@ -336,7 +336,7 @@ class System_Model():
             self.system_components['grd1'].supply(amt)
                
         demand = stage0()
-        if 'cont1' in self.system_components:
+        if 'cnt1' in self.system_components:
             demand = stage1(demand)
         stage2(demand)
 #        self.simulated_df.index.names = ['Hour']
