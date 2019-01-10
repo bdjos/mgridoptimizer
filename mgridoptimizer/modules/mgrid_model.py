@@ -117,7 +117,7 @@ class Battery():
         self.energy_cost = energy_cost
         self.counter = 0 # Counter for charge
         self.stats = {
-            'output': [],
+            'demand': [],
             'levels': [],
             'soc': []
             }
@@ -146,7 +146,7 @@ class Converter():
         self.cost_component = True
         self.capacity_rem = self.power
         self.stats = {
-                'output': []
+                'demand': []
                 }
         self.cost_list = {
                 'base_cost': self.base_cost + self.power*self.power_cost,
@@ -262,7 +262,7 @@ class Solar():
         return cls(list(df['Production']), data['outputs']['ac'], system_capacity, base_cost, perw_cost)
 
     def output(self):
-        return {'production': self.demand}
+        return {'demand': self.demand}
 
 class Grid():
     "Grid component for modelling grid input to system"
@@ -287,7 +287,7 @@ class Grid():
             self.cost_list['yearly_cost'] = self.energy_cost * sum([x for x in self.total_supply if x > 0])
 
     def output(self):
-        return self.total_supply
+        return {'demand': self.total_supply}
                                                     
 class System_Model():
     def __init__(self):
