@@ -103,7 +103,7 @@ class Demand:
         return 0
 
     def output(self):
-        return {'demand': self.demand*-1}
+        return {'demand': [x * -1 for x in self.demand]}
 
 class Battery():
     def __init__(self, energy_capacity, soc_min, soc_max, efficiency, base_cost, energy_cost):
@@ -287,7 +287,7 @@ class Grid():
             self.cost_list['yearly_cost'] = self.energy_cost * sum([x for x in self.total_supply if x > 0])
 
     def output(self):
-        return {'demand': self.total_supply*-1}
+        return {'demand': [x * -1 for x in self.total_supply]}
                                                     
 class System_Model():
     def __init__(self):
