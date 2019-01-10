@@ -222,7 +222,7 @@ class Controller():
                 charge = self.check_peak_shaving(battery['object'], amt)
             charge = self.check_converter(charge)
             self.converter.capacity_calc(charge) # Update Converter capacity available
-            self.battery_list[battery]['object'].charge(charge) # Updte battery capacity
+            self.battery_list[battery]['object'].charge(charge) # Update battery capacity
             amt = amt - charge    
         return amt
     
@@ -327,7 +327,7 @@ class System_Model():
             # Stage 2 operations occur at the controller; e.g generator/battery demand response, arbitrage, etc.
             _output_vals = []
             for demand_vals in amt:
-                _output_vals.append(self.system_components['cont1'].io(demand_vals)) # Neg  values for demand
+                _output_vals.append(self.system_components['cnt1'].io(demand_vals)) # Neg  values for demand
             
             return _output_vals
         
