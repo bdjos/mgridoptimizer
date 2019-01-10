@@ -103,7 +103,7 @@ class Demand:
         return 0
 
     def output(self):
-        return {'demand': self.demand}
+        return {'demand': self.demand*-1}
 
 class Battery():
     def __init__(self, energy_capacity, soc_min, soc_max, efficiency, base_cost, energy_cost):
@@ -128,8 +128,8 @@ class Battery():
         
     def charge(self, amt):
         self.energy_rem += amt
-        self.stats['hour'].append(self.counter)
-        self.stats['output'].append(amt)
+        # self.stats['hour'].append(self.counter)
+        self.stats['demand'].append(amt)
         self.stats['levels'].append(self.energy_rem)
         self.stats['soc'].append(self.energy_rem/self.energy_max)
         self.counter += 1
@@ -155,7 +155,7 @@ class Converter():
     
     def capacity_calc(self, amt):
         self.capacity_rem = self.capacity_rem - abs(amt)
-        self.stats['output'].append(amt)
+        self.stats['demand'].append(amt)
     
     def reset_capacity(self):
         self.capacity_rem = self.power
