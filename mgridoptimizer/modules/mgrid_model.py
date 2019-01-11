@@ -194,7 +194,7 @@ class Controller():
 
     def check_solar_support(self, battery, amt):
         if amt > 0: # Charge if amt > 0
-            if amt < battery.energy_capacity - battery.energy_rem:
+            if amt < (battery.energy_capacity - battery.energy_rem):
                 return amt
             else:
                 return battery.energy_capacity - battery.energy_rem
@@ -218,10 +218,10 @@ class Controller():
             # Step 1: Check capacity of battery available for charging or discharging
             if self.battery_list[battery]['mode'] == 'ss':
                 charge = self.check_solar_support(self.battery_list[battery]['object'], amt)
-            elif self.battery_list[battery]['mode'] == 'ab':
-                charge = self.check_arbitrage(battery['object'], amt)
-            elif self.battery_list[battery]['mode'] == 'ps':
-                charge = self.check_peak_shaving(battery['object'], amt)
+            # elif self.battery_list[battery]['mode'] == 'ab':
+            #     charge = self.check_arbitrage(battery['object'], amt)
+            # elif self.battery_list[battery]['mode'] == 'ps':
+            #     charge = self.check_peak_shaving(battery['object'], amt)
 
             # Step 2: Check converter capacity
             charge = self.check_converter(charge)
