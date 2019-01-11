@@ -81,8 +81,8 @@ def test_api():
                         'zone': 1,
                         'input': {
                              'energy_capacity': 500,
-                             'soc_min': 20,
-                             'soc_max': 80,
+                             'soc_min': 0.2,
+                             'soc_max': 0.8,
                              'efficiency': 0.98,
                              'base_cost': 10000,
                              'energy_cost': 1.5
