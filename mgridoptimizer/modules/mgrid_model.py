@@ -205,7 +205,7 @@ class Controller():
             return 0
     
     def check_converter(self, amt):
-        if abs(amt) < abs(self.converter.capacity_rem:)
+        if abs(amt) < abs(self.converter.capacity_rem):
             return amt
         else:
             return abs(amt)/amt * self.converter.capacity_rem
