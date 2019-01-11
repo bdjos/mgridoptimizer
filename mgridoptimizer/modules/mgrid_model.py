@@ -215,14 +215,21 @@ class Controller():
     def io(self, amt):
         self.converter.reset_capacity()
         for battery in self.battery_list:
+            # Step 1: Check capacity of battery available for charging or discharging
             if self.battery_list[battery]['mode'] == 'ss':
                 charge = self.check_solar_support(self.battery_list[battery]['object'], amt)
             elif self.battery_list[battery]['mode'] == 'ab':
                 charge = self.check_arbitrage(battery['object'], amt)
             elif self.battery_list[battery]['mode'] == 'ps':
                 charge = self.check_peak_shaving(battery['object'], amt)
+
+            # Step 2: Check converter capacity
             charge = self.check_converter(charge)
-            self.converter.capacity_calc(charge) # Update Converter capacity available
+
+            # Step 3: Update Converter capacity available
+            self.converter.capacity_calc(charge)
+
+            # Step 4: Update battery capacity
             self.battery_list[battery]['object'].charge(charge) # Update battery capacity
             amt = amt - charge    
         return amt
@@ -338,7 +345,7 @@ class System_Model():
                
         demand = stage0()
         if 'cnt1' in self.system_components:
-            demand = stage1([x*-1 for x in demand])
+            demand = stage1(demand)
         stage2(demand)
 #        self.simulated_df.index.names = ['Hour']
 #        return sum(self.simulated_df['Demand'])
