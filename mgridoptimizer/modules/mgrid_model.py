@@ -205,7 +205,7 @@ class Controller():
             return 0
     
     def check_converter(self, amt):
-        if abs(amt) < self.converter.capacity_rem:
+        if abs(amt) < abs(self.converter.capacity_rem:)
             return amt
         else:
             return abs(amt)/amt * self.converter.capacity_rem
@@ -336,7 +336,7 @@ class System_Model():
                
         demand = stage0()
         if 'cnt1' in self.system_components:
-            demand = stage1(demand)
+            demand = stage1([x*-1 for x in demand])
         stage2(demand)
 #        self.simulated_df.index.names = ['Hour']
 #        return sum(self.simulated_df['Demand'])

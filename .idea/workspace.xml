@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="9fb4bc6e-fb61-4270-8c42-657148ef8dc4" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mgridoptimizer/modules/mgrid_model.py" beforeDir="false" afterPath="$PROJECT_DIR$/mgridoptimizer/modules/mgrid_model.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -11,7 +12,7 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="FileEditorManager">
-    <splitter split-orientation="horizontal" split-proportion="0.45810494">
+    <splitter split-orientation="horizontal" split-proportion="0.4181676">
       <split-first>
         <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
           <file pinned="false" current-in-tab="false">
@@ -35,7 +36,7 @@
           <file pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/mgridoptimizer/api_test.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="592">
+                <state relative-caret-position="1428">
                   <caret line="87" column="47" lean-forward="true" selection-start-line="87" selection-start-column="47" selection-end-line="87" selection-end-column="47" />
                   <folding>
                     <element signature="e#0#112#0" expanded="true" />
@@ -60,8 +61,11 @@
           <file pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/mgridoptimizer/modules/mgrid_model.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="402">
-                  <caret line="104" column="21" lean-forward="true" selection-start-line="104" selection-start-column="21" selection-end-line="104" selection-end-column="21" />
+                <state relative-caret-position="339">
+                  <caret line="207" column="55" selection-start-line="207" selection-start-column="55" selection-end-line="207" selection-end-column="55" />
+                  <folding>
+                    <element signature="e#7617#9181#0" />
+                  </folding>
                 </state>
               </provider>
             </entry>
@@ -252,7 +256,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/mgridoptimizer/api_test.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="592">
+        <state relative-caret-position="1428">
           <caret line="87" column="47" lean-forward="true" selection-start-line="87" selection-start-column="47" selection-end-line="87" selection-end-column="47" />
           <folding>
             <element signature="e#0#112#0" expanded="true" />
@@ -262,8 +266,11 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/mgridoptimizer/modules/mgrid_model.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="402">
-          <caret line="104" column="21" lean-forward="true" selection-start-line="104" selection-start-column="21" selection-end-line="104" selection-end-column="21" />
+        <state relative-caret-position="339">
+          <caret line="207" column="55" selection-start-line="207" selection-start-column="55" selection-end-line="207" selection-end-column="55" />
+          <folding>
+            <element signature="e#7617#9181#0" />
+          </folding>
         </state>
       </provider>
     </entry>
