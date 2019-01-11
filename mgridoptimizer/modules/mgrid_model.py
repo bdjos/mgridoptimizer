@@ -110,8 +110,8 @@ class Battery():
         self.type = 'battery'
         self.energy_capacity = energy_capacity * soc_max * 1000
         self.floor = energy_capacity * soc_min * 1000
-        self.energy_max = energy_capacity * 1000
-        self.energy_rem = energy_capacity * 1000
+        self.energy_max = self.energy_capacity * 1000
+        self.energy_rem = self.energy_capacity * 1000
         self.base_cost = base_cost
         self.cost_component = True
         self.energy_cost = energy_cost
@@ -135,6 +135,8 @@ class Battery():
         self.counter += 1
         
     def output(self):
+        output_stats = self.stats.copy()
+        output_stats['demand'] = [x * -1 for x in output_stats['demand']]
         return self.stats
 
 class Converter():
