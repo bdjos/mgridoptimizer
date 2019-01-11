@@ -194,10 +194,11 @@ class Controller():
 
     def check_solar_support(self, battery, amt):
         if amt > 0: # Charge if amt > 0
-            if amt < (battery.energy_capacity - battery.energy_rem):
-                return amt
-            else:
-                return battery.energy_capacity - battery.energy_rem
+            return 7777
+            # if amt < (battery.energy_capacity - battery.energy_rem):
+            #     return amt
+            # else:
+            #     return battery.energy_capacity - battery.energy_rem
         elif amt < 0: # Discharge if amt < 0
             if abs(amt) < battery.energy_rem - battery.floor:
                 return amt
