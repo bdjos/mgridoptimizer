@@ -2,6 +2,8 @@ from mgridoptimizer.modules.mgrid_model import Demand, Battery, Converter, Contr
 import os
 import json
 
+test_file = (os.path.join(os.path.dirname(__file__), 'data/test_data.csv')
+
 def api_sim(system_input, demand_file):
     # Project Specs
     project_years = 20
@@ -17,7 +19,6 @@ def api_sim(system_input, demand_file):
                      # 'generator': Generator,
                      'grid': Grid
     }
-
 
     # Define system model
     system = System_Model()
