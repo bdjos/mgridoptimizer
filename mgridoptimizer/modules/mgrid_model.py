@@ -285,7 +285,7 @@ class Solar():
 class Grid():
     "Grid component for modelling grid input to system"
 
-    def __init__(self, energy_cost, nm=False):
+    def __init__(self, energy_cost, nm_allowed=False):
         self.type = 'grid'
         self.nm = nm
         self.energy_cost = energy_cost

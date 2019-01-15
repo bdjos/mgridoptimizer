@@ -145,7 +145,7 @@ def test_api():
                         'zone': 2,
                         'input': {
                             'energy_cost': 0.29,
-                            'nm': False
+                            'nm_allowed': False
                         },
                         'configure': {}
                     }
