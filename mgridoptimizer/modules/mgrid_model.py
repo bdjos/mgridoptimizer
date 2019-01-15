@@ -287,7 +287,7 @@ class Grid():
 
     def __init__(self, energy_cost, nm_allowed=False):
         self.type = 'grid'
-        self.nm = nm
+        self.nm = nm_allowed
         self.energy_cost = energy_cost
         self.total_supply = []
         self.cost_component = True

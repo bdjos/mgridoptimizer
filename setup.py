@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
    name='mgridoptimizer',
-   version='1.2.1',
+   version='1.2.2',
    description='Model and optimize a microgrid/grid connected DER system',
    author='Brian Joseph',
    author_email='briandjoseph@gmail.com',
