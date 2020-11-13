@@ -12,11 +12,6 @@ sys.path.insert(0, os.path.join('..'))
 import json
 import urllib.request
 import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import copy
-import math
-from mgridoptimizer.modules.demanddata import import_data
 
 
 class Cost_Component():
@@ -110,6 +105,40 @@ class Demand:
 
 
 class Battery():
+    def __init__(self, energy_capacity, soc_min, soc_max, efficiency, base_cost, energy_cost):
+        self.type = 'battery'
+        self.energy_capacity = energy_capacity * soc_max * 1000
+        self.floor = energy_capacity * soc_min * 1000
+        self.energy_max = energy_capacity * 1000
+        self.energy_rem = energy_capacity * soc_max * 1000
+        self.base_cost = base_cost
+        self.cost_component = True
+        self.energy_cost = energy_cost
+        self.counter = 0  # Counter for charge
+        self.stats = {
+            'demand': [],
+            'levels': [],
+            'soc': []
+        }
+        self.cost_list = {
+            'base_cost': self.base_cost + self.energy_capacity * self.energy_cost,
+            'yearly_cost': 0
+        }
+
+    def charge(self, amt):
+        self.energy_rem += amt
+        # self.stats['hour'].append(self.counter)
+        self.stats['demand'].append(amt)
+        self.stats['levels'].append(self.energy_rem)
+        self.stats['soc'].append(self.energy_rem / self.energy_max)
+        self.counter += 1
+
+    def output(self):
+        output_stats = self.stats.copy()
+        output_stats['demand'] = [x * -1 for x in output_stats['demand']]
+        return self.stats
+
+class Generator():
     def __init__(self, energy_capacity, soc_min, soc_max, efficiency, base_cost, energy_cost):
         self.type = 'battery'
         self.energy_capacity = energy_capacity * soc_max * 1000

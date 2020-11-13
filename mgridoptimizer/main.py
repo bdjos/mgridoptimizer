@@ -23,7 +23,7 @@ import copy
 
 ############### Input System Info #####################
 # Demand Specs
-file = os.path.join('data', 'dc_foods_2014.csv')
+file = os.path.join('data', 'test_data.csv')
 
 # Define all input ranges. min == max == 0 for no component. min == max == value for single component
 solar_min = 0
@@ -66,10 +66,10 @@ grid_cost = 0.35 / 1000
 
 
 # Run system model for all inputs
-#training_df = mgridtest.multi_sim(file, solar_min, solar_max, battery_min, battery_max, converter_min, converter_max, numsteps,
-#                                  project_years, interest, inflation, solar_base_cost, solar_power_cost, battery_soc_min, battery_soc_max, 
-#                                  battery_efficiency, battery_base_cost, battery_energy_cost, converter_base_cost, 
-#                                  converter_power_cost, grid_cost)
+training_df = mgridtest.multi_sim(file, solar_min, solar_max, battery_min, battery_max, converter_min, converter_max, numsteps,
+                                 project_years, interest, inflation, solar_base_cost, solar_power_cost, battery_soc_min, battery_soc_max,
+                                 battery_efficiency, battery_base_cost, battery_energy_cost, converter_base_cost,
+                                 converter_power_cost, grid_cost)
 
 # Convert 
 X = np.array([training_df['solar'], training_df['battery'], training_df['converter']])

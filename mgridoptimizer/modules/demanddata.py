@@ -84,5 +84,5 @@ class import_data:
         return 0
 
 if __name__ == "__main__":
-    file = 'dc_foods_2014.csv'
+    file = 'test_data.csv'
     data = import_data.fifteenMinute(file)

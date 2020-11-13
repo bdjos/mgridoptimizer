@@ -6,7 +6,7 @@ Created on Wed Nov  7 10:32:23 2018
 """
 
 from modules.mgrid_model import Demand, Battery, Converter, Controller, Solar, Generator, Grid, System_Model
-# from modules.demanddata import import_data
+from modules.demanddata import import_data
 import os
 import numpy as np
 import pandas as pd
@@ -26,7 +26,7 @@ def multi_sim(file, solar_min, solar_max, battery_min, battery_max, converter_mi
     converter_range = np.linspace(converter_min, converter_max, numsteps)
     
     # Create system model object
-    system = system_model()    
+    system = System_Model()
 
     solar_objs = []
     battery_objs= []
@@ -43,14 +43,14 @@ def multi_sim(file, solar_min, solar_max, battery_min, battery_max, converter_mi
         if i == 0:
             battery_objs.append(None)
         else:
-            battery_objs.append(battery(i, battery_soc_min, battery_soc_max,
+            battery_objs.append(Battery(i, battery_soc_min, battery_soc_max,
                        battery_efficiency, battery_base_cost, battery_energy_cost))
     
     for i in converter_range:
         if i == 0:
             converter_objs.append(None)
         else:
-            converter_objs.append(converter(i, converter_base_cost, converter_power_cost))
+            converter_objs.append(Converter(i, converter_base_cost, converter_power_cost))
     
     output = {
             'Demand': [],
@@ -64,7 +64,7 @@ def multi_sim(file, solar_min, solar_max, battery_min, battery_max, converter_mi
     for combinations in product(solar_objs, battery_objs, converter_objs): 
         # Define and add demand, controller and grid to system
         
-        grid1 = grid(grid_cost)
+        grid1 = Grid(grid_cost)
         system_temp.add_component(demand, 'demand', 'stage0') 
         system_temp.add_component(grid1, 'grid1', 'stage2')
         
@@ -113,7 +113,7 @@ def single_sim(converter_power):
     project_years = 20
     
     # Demand Specs
-    file = os.path.join('data', 'dc_foods_2014.csv')
+    file = os.path.join('data', 'test_data.csv')
     
     # Solar Specs
     solar_capacity = 500

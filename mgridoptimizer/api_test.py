@@ -1,4 +1,4 @@
-from mgridoptimizer.modules.mgrid_model import Demand, Battery, Converter, Controller, Solar, Grid, System_Model
+from mgridoptimizer import Demand, Battery, Converter, Controller, Solar, Grid, System_Model
 import os
 import json
 
